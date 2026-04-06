@@ -1,0 +1,237 @@
+#!/usr/bin/env bash
+# Git pre-commit hook — hard gate enforcement.
+# Reads policy from compliance_config.yaml.
+# See: docs/superpowers/specs/2026-04-05-template-enforcement-overhaul-design.md
+
+set -euo pipefail
+
+CONFIG="compliance_config.yaml"
+FAIL_COUNT=0
+PASS_COUNT=0
+FAILURES=""
+
+# --- Config reader ---
+# Tries yq first, falls back to Python parser.
+read_config() {
+    local key="$1"
+    if command -v yq &>/dev/null; then
+        yq -r ".$key" "$CONFIG" 2>/dev/null
+    elif [ -f "hooks/parse_config.py" ]; then
+        python3 hooks/parse_config.py "$key" 2>/dev/null
+    else
+        echo "ERROR: No YAML parser available. Install yq or ensure hooks/parse_config.py exists." >&2
+        exit 1
+    fi
+}
+
+fail() {
+    FAILURES="${FAILURES}\n✗ FAIL  $1"
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+}
+
+pass() {
+    PASS_COUNT=$((PASS_COUNT + 1))
+}
+
+# --- Read config values ---
+MAX_LINES=$(read_config "pre_commit.max_file_lines")
+MAX_LINES="${MAX_LINES:-150}"
+
+# --- Get staged files ---
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+if [ -z "$STAGED_FILES" ]; then
+    exit 0
+fi
+
+# --- Read source_dirs and exclude_dirs ---
+SOURCE_DIRS=$(read_config "pre_commit.source_dirs")
+EXCLUDE_DIRS=$(read_config "pre_commit.exclude_dirs")
+
+# --- Filter to source files ---
+is_source_file() {
+    local file="$1"
+    local in_source=false
+
+    while IFS= read -r dir; do
+        [ -z "$dir" ] && continue
+        if [[ "$file" == "$dir"* ]]; then
+            in_source=true
+            break
+        fi
+    done <<< "$SOURCE_DIRS"
+
+    if ! $in_source; then
+        return 1
+    fi
+
+    while IFS= read -r dir; do
+        [ -z "$dir" ] && continue
+        if [[ "$file" == *"$dir"* ]]; then
+            return 1
+        fi
+    done <<< "$EXCLUDE_DIRS"
+
+    return 0
+}
+
+# --- Detect file language from extension ---
+get_language() {
+    local file="$1"
+    case "$file" in
+        *.py)                       echo "python" ;;
+        *.sh|*.bash|*.zsh)          echo "shell" ;;
+        *.js|*.jsx|*.mjs|*.cjs)     echo "js" ;;
+        *.ts|*.tsx)                  echo "ts" ;;
+        *.go)                       echo "go" ;;
+        *.rs)                       echo "rust" ;;
+        *.java)                     echo "java" ;;
+        *.css|*.scss|*.less)        echo "css" ;;
+        *.html|*.htm)               echo "html" ;;
+        *)                          echo "" ;;
+    esac
+}
+
+# --- Check: header pattern by language ---
+check_header() {
+    local file="$1"
+    local lang
+    lang=$(get_language "$file")
+    [ -z "$lang" ] && return 0
+
+    local has_header=false
+    case "$lang" in
+        python|shell)
+            head -3 "$file" | grep -q "^# Area:" && \
+            head -3 "$file" | grep -q "^# PRD:" && \
+            head -3 "$file" | grep -q "^# NOTE:" && has_header=true
+            ;;
+        js|ts|go|rust|java)
+            head -3 "$file" | grep -q "^// Area:" && \
+            head -3 "$file" | grep -q "^// PRD:" && \
+            head -3 "$file" | grep -q "^// NOTE:" && has_header=true
+            ;;
+        css)
+            head -3 "$file" | grep -q "Area:" && \
+            head -3 "$file" | grep -q "PRD:" && \
+            head -3 "$file" | grep -q "NOTE:" && has_header=true
+            ;;
+        html)
+            head -3 "$file" | grep -q "Area:" && \
+            head -3 "$file" | grep -q "PRD:" && \
+            head -3 "$file" | grep -q "NOTE:" && has_header=true
+            ;;
+    esac
+
+    if ! $has_header; then
+        fail "${file}:  missing Area/PRD/NOTE header"
+        return 1
+    fi
+    return 0
+}
+
+# --- Check: hardcoded values (block patterns) ---
+check_hardcoded() {
+    local file="$1"
+    local line_num match
+
+    # URL literals (excluding allowlisted patterns and test files)
+    if [[ "$file" != *test_* && "$file" != *conftest* && "$file" != *_test.* ]]; then
+        while IFS=: read -r line_num match; do
+            # Check against allowlist
+            local allowed=false
+            for pattern in "http://localhost" "http://127.0.0.1" "https://example.com"; do
+                if [[ "$match" == *"$pattern"* ]]; then
+                    allowed=true
+                    break
+                fi
+            done
+            if ! $allowed; then
+                fail "${file}:${line_num}  URL literal: $(echo "$match" | head -c 60)"
+            fi
+        done < <(grep -n -E "https?://[^[:space:]\"']+" "$file" 2>/dev/null || true)
+    fi
+
+    # API key patterns
+    while IFS=: read -r line_num match; do
+        fail "${file}:${line_num}  API key pattern: $(echo "$match" | head -c 40)"
+    done < <(grep -n -E "sk-[a-zA-Z0-9]{20,}" "$file" 2>/dev/null || true)
+
+    # Absolute home directory paths
+    while IFS=: read -r line_num match; do
+        fail "${file}:${line_num}  Absolute home path: $(echo "$match" | head -c 60)"
+    done < <(grep -n -E "(/Users|/home)/\w+" "$file" 2>/dev/null || true)
+
+    # IP addresses (excluding test files)
+    if [[ "$file" != *test_* && "$file" != *conftest* && "$file" != *_test.* ]]; then
+        while IFS=: read -r line_num match; do
+            local allowed=false
+            if [[ "$match" == *"127.0.0.1"* ]]; then
+                allowed=true
+            fi
+            if ! $allowed; then
+                fail "${file}:${line_num}  IP address: $(echo "$match" | head -c 40)"
+            fi
+        done < <(grep -n -E "\b[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\b" "$file" 2>/dev/null || true)
+    fi
+
+    # Inline API key/password assignments
+    while IFS=: read -r line_num match; do
+        fail "${file}:${line_num}  Inline secret: $(echo "$match" | head -c 50)"
+    done < <(grep -n -E "(api[_-]?key|password)\s*=\s*[\"'][^\"']+" "$file" 2>/dev/null || true)
+}
+
+# --- Main: run checks on each staged source file ---
+echo ""
+echo "PRE-COMMIT CHECK"
+echo "================"
+
+for file in $STAGED_FILES; do
+    [ -f "$file" ] || continue
+    is_source_file "$file" || continue
+
+    file_failed=false
+
+    # Line count check
+    line_count=$(wc -l < "$file" | tr -d ' ')
+    if [ "$line_count" -gt "$MAX_LINES" ]; then
+        fail "${file}:  ${line_count} lines (max: ${MAX_LINES})"
+        file_failed=true
+    fi
+
+    # Header check
+    check_header "$file" || file_failed=true
+
+    # Hardcoded values check
+    local_fails=$FAIL_COUNT
+    check_hardcoded "$file"
+    [ "$FAIL_COUNT" -gt "$local_fails" ] && file_failed=true
+
+    if ! $file_failed; then
+        echo "✓ PASS  $file"
+        pass
+    fi
+done
+
+# --- Run tests ---
+TEST_CMDS=$(read_config "pre_commit.test_commands")
+while IFS= read -r cmd; do
+    [ -z "$cmd" ] && continue
+    if eval "$cmd" > /dev/null 2>&1; then
+        echo "✓ PASS  tests passed ($cmd)"
+        pass
+    else
+        fail "tests failed ($cmd)"
+    fi
+done <<< "$TEST_CMDS"
+
+# --- Summary ---
+if [ "$FAIL_COUNT" -gt 0 ]; then
+    echo -e "$FAILURES"
+    echo ""
+    echo "BLOCKED: ${FAIL_COUNT} violation(s) must be fixed before commit."
+    exit 1
+else
+    echo ""
+    echo "ALL CHECKS PASSED (${PASS_COUNT} items)"
+    exit 0
+fi
