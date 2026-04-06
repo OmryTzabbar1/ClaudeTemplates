@@ -1,6 +1,6 @@
 # ContextModuleDocumentation/CONTEXT_hooks.md
 
-Version: 1.3.0
+Version: 1.4.0
 
 ---
 
@@ -12,7 +12,7 @@ The `hooks` module (`hooks/`) provides enforcement scripts for git pre-commit ga
 
 ## Current Module State
 
-**in-progress** — `parse_config.py` implemented with full test coverage; remaining hooks pending.
+**stable** — All hooks implemented with full test coverage; `pre-commit`, `claude_read_gate.py`, and `claude_advisory_scan.py` all created.
 
 ---
 
@@ -22,13 +22,14 @@ The `hooks` module (`hooks/`) provides enforcement scripts for git pre-commit ga
 - **2026-04-05:** `claude_read_gate.py` — Created Claude Code PreToolUse read gate hook (127 lines)
 - **2026-04-05:** `parse_config.py` — Created YAML dotted-key resolver for shell hook fallback (60 lines)
 - **2026-04-05:** `tests/test_parse_config.py` — Created TDD test suite, 10 tests (88 lines)
+- **2026-04-05:** `hooks/pre-commit` — Created git pre-commit hard gate (237 lines)
 - **2026-04-05:** Created module.
 
 ---
 
 ## Pending Tasks
 
-- [ ] Create `hooks/pre-commit` (Task 6)
+- [x] Create `hooks/pre-commit` (Task 6)
 - [x] Create `hooks/claude_read_gate.py` (Task 7)
 - [x] Create `hooks/claude_advisory_scan.py` (Task 8)
 
@@ -38,6 +39,7 @@ The `hooks` module (`hooks/`) provides enforcement scripts for git pre-commit ga
 
 ```
 hooks/
+├── pre-commit               (237 lines)  — git pre-commit hard gate; enforces headers, line limit, no hardcoded values
 ├── parse_config.py           (60 lines)  — YAML dotted-key resolver; outputs shell-friendly values
 ├── claude_read_gate.py      (127 lines)  — PreToolUse hook; blocks Edit/Write until CONTEXT file read
 └── claude_advisory_scan.py  (149 lines)  — PostToolUse hook; advisory hardcoded pattern scanner
@@ -46,7 +48,7 @@ tests/
 └── test_parse_config.py      (88 lines)  — 10 tests for parse_config.py
 ```
 
-Total: 424 lines across 4 files.
+Total: 661 lines across 5 files.
 
 ---
 

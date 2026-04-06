@@ -111,7 +111,7 @@ Input → Processing → Output
 
 | File | Module | Status |
 |------|--------|--------|
-| `CONTEXT_hooks.md` | Hooks | in-progress |
+| `CONTEXT_hooks.md` | Hooks | stable |
 | `CONTEXT_[module1].md` | [Module 1] | planning |
 | `CONTEXT_[module2].md` | [Module 2] | planning |
 
@@ -141,7 +141,7 @@ project/
 ├── agents/
 │   └── compliance_monitor.md          # compliance auditor agent definition
 ├── hooks/
-│   ├── pre-commit                      # git pre-commit hard gate (pending)
+│   ├── pre-commit         (237 lines)   # git pre-commit hard gate
 │   ├── parse_config.py    (60 lines)   # YAML parser fallback for shell hooks
 │   ├── claude_read_gate.py (127 lines)  # Claude Code PreToolUse read gate
 │   └── claude_advisory_scan.py (149 lines)  # Claude Code PostToolUse advisory scanner

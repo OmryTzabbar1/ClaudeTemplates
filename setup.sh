@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Area: Setup
-# PRD: plans/setup.md
+# PRD: docs/superpowers/plans/2026-04-05-template-enforcement-overhaul.md
 # NOTE: After making any changes to this file, read CLAUDE.md, follow the guidelines, and update the relevant docs.
 # setup.sh — Set up ClaudeTemplates enforcement infrastructure in a project.
 # Safe: checks for existing hooks, merges settings, deduplicates .gitignore entries.
