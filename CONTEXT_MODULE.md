@@ -1,6 +1,6 @@
 # ContextModuleDocumentation/CONTEXT_[MODULE].md
 
-Version: 1.0.0
+Version: 1.1.0
 
 ---
 
@@ -71,14 +71,28 @@ Total: [N] lines across [N] files.
 
 ---
 
+## Version Decision Table
+
+<!-- Project-level overrides to this table live in CONTEXT.md § Versioning Rules -->
+
+| Change type | Version bump |
+|---|---|
+| Line count correction only | patch |
+| New file added to module | minor |
+| File removed or renamed | minor |
+| Module behavior/API changed | minor |
+| Module removed or replaced | major |
+
+---
+
 ## Module Change Checklist
 
 Run this checklist after every change to this module. Do not skip items.
 
-- [ ] **Line counts** — Update every file's line count in the Architecture & File Map above (`wc -l` each file)
-- [ ] **New files** — If you created a new file: add it to the File Map above, add it to `CONTEXT.md` Architecture & File Map, and ensure it has the `Area/PRD/NOTE` header
-- [ ] **Removed files** — If you deleted a file: remove it from the File Map above and from `CONTEXT.md`
+- [ ] **Line counts** — Update every file's line count in the Architecture & File Map above (`wc -l` each file) *(verified by compliance monitor)*
+- [ ] **New files** — If you created a new file: add it to the File Map above, add it to `CONTEXT.md` Architecture & File Map, and ensure it has the Area/PRD/NOTE header *(header enforced by pre-commit)*
+- [ ] **Removed files** — If you deleted a file: remove it from the File Map above and from `CONTEXT.md` *(verified by compliance monitor)*
 - [ ] **Split files** — If you split a file: update the original's line count, add the new file(s) everywhere, update imports in consumers
-- [ ] **Interface changes** — If filenames or output formats changed: update the Interface Contracts table in `CONTEXT.md`
-- [ ] **Version bump** — Increment this file's version (patch for line-count fixes, minor for new files or behavior changes)
+- [ ] **Interface changes** — If filenames or output formats changed: update the Interface Contracts table in `CONTEXT.md` *(verified by compliance monitor)*
+- [ ] **Version bump** — Increment this file's version per the Version Decision Table above
 - [ ] **Recent Changes** — Add a dated bullet to the Recent Changes section above
