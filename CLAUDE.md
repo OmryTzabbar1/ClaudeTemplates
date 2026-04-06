@@ -2,223 +2,113 @@
 
 **IMPORTANT: Read this entire file before making ANY code changes.**
 
-Version: 1.0.0
+Version: 2.0.0
 
 ---
 
-## Project Overview
+## ⛔ TIER 1 — NON-NEGOTIABLE RULES
 
-<!-- Replace with your project description. 2-3 sentences: what it does, who it's for, what tech stack. -->
+These rules are hard constraints. Violations are caught by hooks and block commits.
 
-[PROJECT_NAME] is a [brief description]. It [what it does] using [key technologies].
+1. **TDD** — Write the test first. Then write the minimum code to make it pass. No untested code ships. No exceptions.
 
-**Design spec:** `docs/superpowers/specs/YYYY-MM-DD-[project]-design.md`
+2. **150-line file limit** — All source files must stay under 150 lines. If a file exceeds this, refactor or split it before committing. *Enforced by pre-commit hook.*
+
+3. **No hardcoded values** — Never hardcode secrets, credentials, file paths, URLs, API endpoints, model names, numeric thresholds, timeouts, or converter names in source code. Every such value must come from a config file, an environment variable, or a function parameter with a documented default. *Enforced by pre-commit hook.*
+
+4. **File headers** — Every source file must open with an Area/PRD/NOTE header in the language's comment syntax. *Enforced by pre-commit hook.*
+
+   | Language | Syntax |
+   |----------|--------|
+   | Python, Shell, Ruby, YAML | `# Area: ...` / `# PRD: ...` / `# NOTE: ...` |
+   | JS, TS, Go, Rust, Java, C | `// Area: ...` / `// PRD: ...` / `// NOTE: ...` |
+   | CSS | `/* Area: ... */` / `/* PRD: ... */` / `/* NOTE: ... */` |
+   | HTML | `<!-- Area: ... -->` / `<!-- PRD: ... -->` / `<!-- NOTE: ... -->` |
+
+   Header content:
+   - **Area:** `<Module Name>`
+   - **PRD:** `plans/<plan-filename>.md`
+   - **NOTE:** `After making any changes to this file, read CLAUDE.md, follow the guidelines, and update the relevant docs.`
 
 ---
 
-## Subagent Rules
+## 📋 TIER 2 — BEFORE STARTING WORK
 
-Every subagent working on this project MUST:
+### Subagent Rules
 
-1. Read this entire CLAUDE.md before making ANY changes
-2. Read `CONTEXT.md` for project state — including the **Interface Contracts** table
+Every subagent working on this project MUST, in this order:
+
+1. Read this entire CLAUDE.md
+2. Read `CONTEXT.md` — includes architecture, terminology, data flow, interface contracts, and the Module Context Files table
 3. Read the `ContextModuleDocumentation/CONTEXT_*.md` for the module being worked on
-4. **Cross-reference dependencies** — When your module consumes or references output from another module, read that module's CONTEXT file to verify filenames, formats, and schemas. Never guess at filenames or suffixes; always confirm against the producing module's documentation and the Interface Contracts table in CONTEXT.md.
-5. If creating a new module, create its `CONTEXT_*.md` first using the template at `CONTEXT_MODULE.md`
-6. Follow all Development Principles below
-7. As the FINAL task before completion, re-read this CLAUDE.md and run the Pre-Completion Compliance Checklist
+4. Cross-reference dependencies against the Interface Contracts table in CONTEXT.md
+5. Output structured read confirmation to the conversation immediately after reading each CONTEXT file, before any Edit or Write tool calls on files in that module:
+   `CONTEXT READ: <file> | state: <phase> | last change: <date+desc> | open tasks: <N>`
+6. If creating a new module, create its `CONTEXT_*.md` first using the template at `CONTEXT_MODULE.md`
+7. Run the Pre-Completion Compliance Checklist (Tier 3) before reporting done
 8. Do not report work as complete until all checklist items pass
 
----
+### Behavioral Expectations
 
-## Terminology
+- **Modularity** — Single responsibility per module. If it needs a long explanation, it does too much.
+- **Check existing code first** — Search the codebase before implementing. Never duplicate logic.
+- **Reuse before writing** — Wire into existing functions and modules. New code is a last resort.
+- **Register every new file** — When creating a new source file (including splits/extractions), immediately: add the file header, add it to the module's CONTEXT_*.md and CONTEXT.md file maps with line count, and add it to the Interface Contracts table if it produces or consumes files.
 
-<!-- Define project-specific terms that Claude or subagents need to understand. -->
+### Session Scope Assessment
 
-- **Term 1** — Definition
-- **Term 2** — Definition
-- **Term 3** — Definition
+Every implementation plan must open with:
 
----
+- Modules touched: [list]
+- Files created/modified: [N]
+- Reversible if incomplete: [yes/no — why]
+- Estimated completion confidence: [high/medium/low]
+- Split recommended: [yes/no]
+- Justification: [one sentence]
 
-## Architecture Layers
+### Advisory Warning Response
 
-<!-- Describe your system's layers. Adjust the number of layers to your project. -->
+When you see an `⚠ ADVISORY` warning from the post-edit hook, you must either fix the violation or output a DISMISS line before your next tool call:
 
-- **Layer 1 — [Name]:** [What it does]
-- **Layer 2 — [Name]:** [What it does]
-- **Layer 3 — [Name]:** [What it does]
+`DISMISS: <file>:<line> | <matched pattern> | reason: <justification, 20+ chars>`
 
-**Rules:**
-- [Rule about what belongs in which layer]
-- [Rule about data flow between layers]
+### Recovery
 
----
-
-## Key Data Flow
-
-<!-- Show the end-to-end data pipeline. Use ASCII art or a simple diagram. -->
-
-```
-Input → Processing → Output
-```
+Git is the recovery path for incorrect CONTEXT updates. Use `git log`/`diff`/`blame` to identify drift. The compliance monitor writes its last report to `.claude/last_compliance_report.json` — check it at session start if the prior session ended with unresolved FAILs.
 
 ---
 
-## Development Principles
+## 📎 TIER 3 — REFERENCE
 
-1. **Modularity** — Small, focused modules with single, clear responsibilities. If a module needs a long explanation of what it does, it does too much.
+### CONTEXT File Maintenance
 
-2. **Check existing code first** — Before implementing any function, search the codebase for an existing implementation. Never duplicate logic.
+- Update the relevant `CONTEXT_*.md` after every meaningful change to code, config, or docs
+- Read the `CONTEXT_*.md` before touching any module *(enforced by Claude Code hook)*
+- Module context files are listed in: CONTEXT.md → Module Context Files table
+- Full maintenance rules, required sections, and update triggers: see CONTEXT.md § CONTEXT File Maintenance
 
-3. **Reuse before writing** — Wire into existing functions and modules. New code is a last resort, not a first instinct.
+### Documentation & Versioning
 
-4. **TDD** — Write the test first. Then write the minimum code to make it pass. No untested code ships. Must be 100% TDD. DO NOT stop TDD prematurely. 
+- Every `.md` file has a semantic version
+- Version bump rules are in each `CONTEXT_*.md` file's Version Decision Table
+- Plans live in `plans/`, one per module, with exact function signatures
+- Full versioning rules: see CONTEXT.md § Versioning Rules
 
-5. **150-line file limit** — All source files must stay under 150 lines. If a file exceeds this, refactor or split it before committing.
+### Pre-Completion Compliance Checklist
 
-6. **No hardcoded values** — Never hardcode secrets, credentials, file paths, URLs, API endpoints, model names, numeric thresholds, timeouts, or converter names in source code. Every such value must come from a config file, an environment variable, or a function parameter with a documented default.
+Before marking any task complete, all of the following must be true.
 
-7. **File headers** — Every source file must open with:
-   ```python
-   # Area: <Module Name>
-   # PRD: plans/<plan-filename>.md
-   # NOTE: After making any changes to this file, read CLAUDE.md, follow the guidelines, and update the relevant docs.
-   ```
+**Blocking** (caught by git pre-commit — commit will fail):
 
-8. **Keep CONTEXT files current** — After every meaningful change to code, config, or docs, update the relevant `ContextModuleDocumentation/CONTEXT_*.md` file. An outdated CONTEXT file is worse than none.
-
-9. **Read before touching** — Before working on any module, read the `ContextModuleDocumentation/CONTEXT_*.md` file for that module. Do not rely on memory or assumptions from a prior session.
-
-10. **Recommend session splits** — If a task is too large for one session, say so and propose a split before starting.
-
-11. **Register every new file** — When creating a new source file (including splits/extractions from existing files), immediately:
-    - Add the `Area/PRD/NOTE` header
-    - Add it to the module's `CONTEXT_*.md` Architecture & File Map (with line count)
-    - Add it to `CONTEXT.md` Architecture & File Map (with line count)
-    - Add it to the Interface Contracts table in `CONTEXT.md` if it produces or consumes files
-    - If it's a new module with no CONTEXT file, create one from `CONTEXT_MODULE.md` and add it to both the CLAUDE.md and CONTEXT.md Module Context Files tables
-
----
-
-## Module Context Files
-
-<!-- List all CONTEXT files. Add rows as you create new modules. -->
-
-| File | Module | Covers |
-|------|--------|--------|
-| `CONTEXT_[module1].md` | [Module 1] | [Brief description] |
-| `CONTEXT_[module2].md` | [Module 2] | [Brief description] |
-
-### When to read which file
-
-- Working on [module 1] → read `CONTEXT_[module1].md`
-- Working on [module 2] → read `CONTEXT_[module2].md`
-
----
-
-## Documentation & Versioning
-
-1. **Semantic versions everywhere** — Every `.md` doc (README, plans, CONTEXT files) must have a version at the top (e.g. `Version: 1.0.0`).
-
-2. **Plan per module** — Each module has its own plan in `plans/`. Modules map to one or more source files.
-
-3. **Sync on change** — When code changes, update the corresponding plan: increment the version, update content, update any affected sections.
-
-4. **Exact function signatures in plans** — Copy-paste signatures from source. Never paraphrase. Include all parameters and defaults.
-
-5. **Line count accuracy** — After any file modification, verify and update line counts in the corresponding plan and CONTEXT file.
-
-6. **Plan mapping completeness** — Every source file whose header references a plan must appear in that plan's File Mapping table.
-
----
-
-## CONTEXT.md Maintenance
-
-Each `ContextModuleDocumentation/CONTEXT_*.md` is the **living snapshot** of its module. It is what a subagent or new session reads *first* to understand a module's current state.
-
-### Required Sections
-
-1. **Module Summary** — What the module does and its core purpose.
-2. **Current State** — Phase: `planning` / `in-progress` / `stable` / `deprecated`.
-3. **Recent Changes** — Bulleted log of the last 5-10 meaningful changes with dates. Oldest roll off as new ones are added.
-4. **Pending Tasks** — What still needs to be done, in priority order. Strike through completed items; remove them next session.
-5. **Architecture & File Map** — Directory tree with line counts and one-line description per file.
-6. **Key Decisions & Notes** — Design decisions, open questions, and constraints future sessions must know.
-
-### When to Update
-
-- After any code, config, or doc change in that module
-- After adding or removing files
-- At the end of every session, even if only to update "Current State"
-
-### Module Change Checklist
-
-Every CONTEXT file includes a Module Change Checklist at the bottom (see `CONTEXT_MODULE.md` template). **Run it after every change to the module.** The checklist covers line counts, new/removed/split files, interface changes, and version bumps. Do not mark a task complete without running the checklist for every module you touched.
-
-### Rules
-
-- Bullet points and tables over prose — keep it scannable
-- Version it like every other doc
-- This file is for **module state**; development rules live here in CLAUDE.md
-
----
-
-## Project Structure
-
-<!-- Replace with your actual directory tree. Keep it current. -->
-
-```
-project/
-├── CLAUDE.md                           # this file — project rules
-├── CONTEXT.md                          # living project snapshot
-├── CONTEXT_MODULE.md                   # template for new context files
-├── ContextModuleDocumentation/         # one CONTEXT_*.md per module
-├── plans/                              # implementation plans
-├── docs/superpowers/specs/             # design specs
-├── src/                                # source code
-│   ├── config/
-│   │   └── config.yaml                # all paths & settings
-│   ├── [module1]/                     # module 1 files
-│   └── [module2]/                     # module 2 files
-├── scripts/                            # standalone utility scripts
-└── tests/                              # test suite
-```
-
----
-
-## Testing
-
-- **Framework:** pytest
-- **Location:** `tests/`
-- **Coverage:** Every source module must have a corresponding test file
-- **Run:** `pytest tests/` from project root
-- **TDD required:** Write test first, then implementation
-
----
-
-## Pre-Completion Compliance Checklist
-
-Before marking any task complete, all of the following must be true:
-
-**Code quality:**
-- [ ] All tests pass (`pytest tests/`)
+- [ ] All tests pass (`pytest tests/` or per `compliance_config.yaml` test_commands)
 - [ ] All source files are under 150 lines
 - [ ] No hardcoded values introduced
-- [ ] Every source file has the `Area/PRD/NOTE` header pointing to a valid plan
+- [ ] Every source file has the Area/PRD/NOTE header
 
-**File accounting (run after ANY file creation, split, or rename):**
-- [ ] Every source file appears in `CONTEXT.md` Architecture & File Map with correct line count
-- [ ] Every test file appears in `CONTEXT.md` Architecture & File Map with correct line count
-- [ ] Every script file appears in `CONTEXT.md` Architecture & File Map with correct line count
-- [ ] Every source file appears in its module's `CONTEXT_*.md` Architecture & File Map with correct line count
-- [ ] Every `CONTEXT_*.md` file appears in both the CLAUDE.md and CONTEXT.md Module Context Files tables
+**Advisory** (caught by compliance monitor — report injected at session end):
 
-**Documentation sync:**
-- [ ] Every `.md` file has a semantic version
-- [ ] Every source file referencing a plan appears in that plan's mapping table
-- [ ] Line counts in plans match actual file lengths
-- [ ] All filenames/suffixes for consumed outputs match the Interface Contracts table in CONTEXT.md
-- [ ] Relevant `ContextModuleDocumentation/CONTEXT_*.md` files updated (version incremented)
-- [ ] Relevant plan versions incremented and content synced
-- [ ] `CONTEXT.md` updated if project-level state changed
+- [ ] Every new file registered in CONTEXT.md and its module's CONTEXT_*.md with correct line count
+- [ ] Line counts in docs match `wc -l`
+- [ ] Interface Contracts table matches actual filenames in code
+- [ ] All `.md` files have semantic versions, incremented if touched
+- [ ] Plans synced with code changes
