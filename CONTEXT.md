@@ -51,6 +51,8 @@ Version: 2.0.0
 
 <!-- Most recent first. Keep 10-20 entries. Oldest roll off. Include file names and test counts. -->
 
+- **2026-04-05:** Created `hooks/parse_config.py` — YAML dotted-key resolver for shell hook fallback (60 lines); `tests/test_parse_config.py` — 10 tests (88 lines)
+- **2026-04-05:** Created `ContextModuleDocumentation/CONTEXT_hooks.md` — hooks module context file
 - **2026-04-05:** Created compliance_config.yaml — machine-readable policy for git hooks and Claude Code hooks (114 lines)
 - **YYYY-MM-DD:** Created project scaffolding — CLAUDE.md, CONTEXT.md, CONTEXT_MODULE.md, directory structure
 
@@ -106,11 +108,13 @@ Input → Processing → Output
 
 | File | Module | Status |
 |------|--------|--------|
+| `CONTEXT_hooks.md` | Hooks | in-progress |
 | `CONTEXT_[module1].md` | [Module 1] | planning |
 | `CONTEXT_[module2].md` | [Module 2] | planning |
 
 ### When to read which file
 
+- Working on hooks → read `ContextModuleDocumentation/CONTEXT_hooks.md`
 - Working on [module 1] → read `ContextModuleDocumentation/CONTEXT_[module1].md`
 - Working on [module 2] → read `ContextModuleDocumentation/CONTEXT_[module2].md`
 
@@ -128,15 +132,16 @@ project/
 ├── compliance_config.yaml (114 lines)  # machine-readable policy for hooks
 ├── setup.sh                            # project setup with safe hook install
 ├── ContextModuleDocumentation/
+│   ├── CONTEXT_hooks.md               # hooks module state
 │   ├── CONTEXT_[module1].md           # [module 1] state
 │   └── CONTEXT_[module2].md           # [module 2] state
 ├── agents/
 │   └── compliance_monitor.md          # compliance auditor agent definition
 ├── hooks/
-│   ├── pre-commit                     # git pre-commit hard gate
-│   ├── parse_config.py                # YAML parser fallback for shell hooks
-│   ├── claude_read_gate.py            # Claude Code PreToolUse read gate
-│   └── claude_advisory_scan.py        # Claude Code PostToolUse advisory scanner
+│   ├── pre-commit                      # git pre-commit hard gate (pending)
+│   ├── parse_config.py    (60 lines)   # YAML parser fallback for shell hooks
+│   ├── claude_read_gate.py             # Claude Code PreToolUse read gate (pending)
+│   └── claude_advisory_scan.py         # Claude Code PostToolUse advisory scanner (pending)
 ├── plans/
 │   └── YYYY-MM-DD-[plan-name].md      # implementation plan
 ├── docs/superpowers/specs/
@@ -151,9 +156,10 @@ project/
 ├── scripts/
 │   └── [script].py        (XX lines)  — [Description]
 └── tests/
-    ├── conftest.py        (XX lines)  — Shared test fixtures
-    ├── test_[module1].py  (XX lines)  — X tests for [module 1]
-    └── test_[module2].py  (XX lines)  — X tests for [module 2]
+    ├── conftest.py           (XX lines)   — Shared test fixtures
+    ├── test_parse_config.py  (88 lines)   — 10 tests for hooks/parse_config.py
+    ├── test_[module1].py     (XX lines)   — X tests for [module 1]
+    └── test_[module2].py     (XX lines)   — X tests for [module 2]
 ```
 
 ---
