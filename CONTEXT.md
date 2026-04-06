@@ -1,6 +1,24 @@
 # CONTEXT.md
 
-Version: 1.0.0
+Version: 2.0.0
+
+---
+
+## Table of Contents
+
+- [Project Summary](#project-summary)
+- [Current Project State](#current-project-state)
+- [Recent Changes](#recent-changes)
+- [Pending Tasks](#pending-tasks)
+- [Terminology](#terminology)
+- [Architecture](#architecture)
+- [Data Flow](#data-flow)
+- [Module Context Files](#module-context-files)
+- [Architecture & File Map](#architecture--file-map)
+- [Interface Contracts](#interface-contracts)
+- [Versioning Rules](#versioning-rules)
+- [CONTEXT File Maintenance](#context-file-maintenance)
+- [Key Project Decisions](#key-project-decisions)
 
 ---
 
@@ -47,14 +65,53 @@ Version: 1.0.0
 
 ---
 
+## Terminology
+
+<!-- Define project-specific terms that Claude or subagents need to understand. -->
+
+- **Term 1** — Definition
+- **Term 2** — Definition
+- **Term 3** — Definition
+
+---
+
+## Architecture
+
+<!-- Describe your system's layers. Adjust the number of layers to your project. -->
+
+- **Layer 1 — [Name]:** [What it does]
+- **Layer 2 — [Name]:** [What it does]
+- **Layer 3 — [Name]:** [What it does]
+
+**Rules:**
+- [Rule about what belongs in which layer]
+- [Rule about data flow between layers]
+
+---
+
+## Data Flow
+
+<!-- Show the end-to-end data pipeline. Use ASCII art or a simple diagram. -->
+
+```
+Input → Processing → Output
+```
+
+---
+
 ## Module Context Files
 
-<!-- Mirror of the table in CLAUDE.md. Keep both in sync. -->
+<!-- Canonical table. CLAUDE.md points here — do not duplicate this table elsewhere. -->
 
 | File | Module | Status |
 |------|--------|--------|
 | `CONTEXT_[module1].md` | [Module 1] | planning |
 | `CONTEXT_[module2].md` | [Module 2] | planning |
+
+### When to read which file
+
+- Working on [module 1] → read `ContextModuleDocumentation/CONTEXT_[module1].md`
+- Working on [module 2] → read `ContextModuleDocumentation/CONTEXT_[module2].md`
 
 ---
 
@@ -64,12 +121,21 @@ Version: 1.0.0
 
 ```
 project/
-├── CLAUDE.md                           # project rules
+├── CLAUDE.md                           # project rules (tiered)
 ├── CONTEXT.md                          # this file — living project snapshot
 ├── CONTEXT_MODULE.md                   # template for new context files
+├── compliance_config.yaml              # machine-readable policy for hooks
+├── setup.sh                            # project setup with safe hook install
 ├── ContextModuleDocumentation/
 │   ├── CONTEXT_[module1].md           # [module 1] state
 │   └── CONTEXT_[module2].md           # [module 2] state
+├── agents/
+│   └── compliance_monitor.md          # compliance auditor agent definition
+├── hooks/
+│   ├── pre-commit                     # git pre-commit hard gate
+│   ├── parse_config.py                # YAML parser fallback for shell hooks
+│   ├── claude_read_gate.py            # Claude Code PreToolUse read gate
+│   └── claude_advisory_scan.py        # Claude Code PostToolUse advisory scanner
 ├── plans/
 │   └── YYYY-MM-DD-[plan-name].md      # implementation plan
 ├── docs/superpowers/specs/
@@ -93,7 +159,7 @@ project/
 
 ## Interface Contracts
 
-<!-- Every file produced by one module and consumed by another. This is the single source of truth for filenames and formats. -->
+<!-- Every file produced by one module and consumed by another. Single source of truth for filenames and formats. -->
 
 | Producer | Output Location | Filename Pattern | Consumed By |
 |----------|----------------|------------------|-------------|
@@ -103,6 +169,64 @@ project/
 **Rules:**
 - If you change a filename pattern, update this table AND every consumer listed in the "Consumed By" column.
 - If you build a new consumer, verify the suffix you use against this table before writing code.
+
+---
+
+## Versioning Rules
+
+### Semantic Versions
+
+Every `.md` doc (README, plans, CONTEXT files) must have a `Version: X.X.X` line near the top.
+
+### When to Bump
+
+Version bump rules for CONTEXT files are defined in each `CONTEXT_*.md`'s Version Decision Table. The default table (from the template) is:
+
+| Change type | Version bump |
+|---|---|
+| Line count correction only | patch |
+| New file added to module | minor |
+| File removed or renamed | minor |
+| Module behavior/API changed | minor |
+| Module removed or replaced | major |
+
+Projects may override this table by adding a `## Version Decision Table Override` section below. If present, that override applies to all modules in this project.
+
+### Plan Versioning
+
+- Each module has its own plan in `plans/`
+- When code changes, update the corresponding plan: increment the version, update content, update any affected sections
+- Exact function signatures in plans — copy-paste from source, never paraphrase
+- Every source file whose header references a plan must appear in that plan's File Mapping table
+
+---
+
+## CONTEXT File Maintenance
+
+Each `ContextModuleDocumentation/CONTEXT_*.md` is the **living snapshot** of its module. It is what a subagent or new session reads *first* to understand a module's current state.
+
+### Required Sections
+
+1. **Module Summary** — What the module does and its core purpose
+2. **Current State** — Phase: `planning` / `in-progress` / `stable` / `deprecated`
+3. **Recent Changes** — Bulleted log of the last 5-10 meaningful changes with dates. Oldest roll off.
+4. **Pending Tasks** — Priority order. Remove completed items next session.
+5. **Architecture & File Map** — Directory tree with line counts and one-line description per file
+6. **Key Decisions & Notes** — Design decisions, open questions, constraints
+7. **Version Decision Table** — Patch/minor/major rules (from template)
+8. **Module Change Checklist** — Run after every change (from template)
+
+### When to Update
+
+- After any code, config, or doc change in that module
+- After adding or removing files
+- At the end of every session, even if only to update "Current State"
+
+### Rules
+
+- Bullet points and tables over prose — keep it scannable
+- Version it like every other doc
+- CONTEXT files are for **module state**; development rules live in CLAUDE.md
 
 ---
 
