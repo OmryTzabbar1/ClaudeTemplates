@@ -51,6 +51,7 @@ Version: 2.0.0
 
 <!-- Most recent first. Keep 10-20 entries. Oldest roll off. Include file names and test counts. -->
 
+- **2026-04-05:** Created `hooks/claude_read_gate.py` — Claude Code PreToolUse read gate (127 lines)
 - **2026-04-05:** Created `hooks/parse_config.py` — YAML dotted-key resolver for shell hook fallback (60 lines); `tests/test_parse_config.py` — 10 tests (88 lines)
 - **2026-04-05:** Created `ContextModuleDocumentation/CONTEXT_hooks.md` — hooks module context file
 - **2026-04-05:** Created compliance_config.yaml — machine-readable policy for git hooks and Claude Code hooks (114 lines)
@@ -140,7 +141,7 @@ project/
 ├── hooks/
 │   ├── pre-commit                      # git pre-commit hard gate (pending)
 │   ├── parse_config.py    (60 lines)   # YAML parser fallback for shell hooks
-│   ├── claude_read_gate.py             # Claude Code PreToolUse read gate (pending)
+│   ├── claude_read_gate.py (127 lines)  # Claude Code PreToolUse read gate
 │   └── claude_advisory_scan.py         # Claude Code PostToolUse advisory scanner (pending)
 ├── plans/
 │   └── YYYY-MM-DD-[plan-name].md      # implementation plan
