@@ -51,6 +51,7 @@ Version: 2.0.0
 
 <!-- Most recent first. Keep 10-20 entries. Oldest roll off. Include file names and test counts. -->
 
+- **2026-04-05:** Created `setup.sh` — safe project bootstrapping script; copies templates, installs hooks, configures .claude/settings.json and .gitignore (213 lines)
 - **2026-04-05:** Created `hooks/claude_advisory_scan.py` — Claude Code PostToolUse advisory scanner (149 lines)
 - **2026-04-05:** Created `hooks/claude_read_gate.py` — Claude Code PreToolUse read gate (127 lines)
 - **2026-04-05:** Created `hooks/parse_config.py` — YAML dotted-key resolver for shell hook fallback (60 lines); `tests/test_parse_config.py` — 10 tests (88 lines)
@@ -132,7 +133,7 @@ project/
 ├── CONTEXT.md                          # this file — living project snapshot
 ├── CONTEXT_MODULE.md                   # template for new context files
 ├── compliance_config.yaml (114 lines)  # machine-readable policy for hooks
-├── setup.sh                            # project setup with safe hook install
+├── setup.sh              (213 lines)    # project setup with safe hook install
 ├── ContextModuleDocumentation/
 │   ├── CONTEXT_hooks.md               # hooks module state
 │   ├── CONTEXT_[module1].md           # [module 1] state
