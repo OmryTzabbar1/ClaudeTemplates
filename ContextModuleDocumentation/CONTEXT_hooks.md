@@ -1,6 +1,6 @@
 # ContextModuleDocumentation/CONTEXT_hooks.md
 
-Version: 1.2.0
+Version: 1.3.0
 
 ---
 
@@ -18,6 +18,7 @@ The `hooks` module (`hooks/`) provides enforcement scripts for git pre-commit ga
 
 ## Recent Changes
 
+- **2026-04-05:** `claude_advisory_scan.py` — Created Claude Code PostToolUse advisory scanner (149 lines)
 - **2026-04-05:** `claude_read_gate.py` — Created Claude Code PreToolUse read gate hook (127 lines)
 - **2026-04-05:** `parse_config.py` — Created YAML dotted-key resolver for shell hook fallback (60 lines)
 - **2026-04-05:** `tests/test_parse_config.py` — Created TDD test suite, 10 tests (88 lines)
@@ -29,7 +30,7 @@ The `hooks` module (`hooks/`) provides enforcement scripts for git pre-commit ga
 
 - [ ] Create `hooks/pre-commit` (Task 6)
 - [x] Create `hooks/claude_read_gate.py` (Task 7)
-- [ ] Create `hooks/claude_advisory_scan.py` (Task 8)
+- [x] Create `hooks/claude_advisory_scan.py` (Task 8)
 
 ---
 
@@ -37,14 +38,15 @@ The `hooks` module (`hooks/`) provides enforcement scripts for git pre-commit ga
 
 ```
 hooks/
-├── parse_config.py       (60 lines)  — YAML dotted-key resolver; outputs shell-friendly values
-├── claude_read_gate.py  (127 lines)  — PreToolUse hook; blocks Edit/Write until CONTEXT file read
+├── parse_config.py           (60 lines)  — YAML dotted-key resolver; outputs shell-friendly values
+├── claude_read_gate.py      (127 lines)  — PreToolUse hook; blocks Edit/Write until CONTEXT file read
+└── claude_advisory_scan.py  (149 lines)  — PostToolUse hook; advisory hardcoded pattern scanner
 
 tests/
-└── test_parse_config.py  (88 lines)  — 10 tests for parse_config.py
+└── test_parse_config.py      (88 lines)  — 10 tests for parse_config.py
 ```
 
-Total: 275 lines across 3 files.
+Total: 424 lines across 4 files.
 
 ---
 
