@@ -1,0 +1,114 @@
+# Area: Compliance
+# PRD: plans/2026-04-05-template-enforcement-overhaul.md
+# NOTE: After making any changes to this file, read CLAUDE.md, follow the guidelines, and update the relevant docs.
+
+# compliance_config.yaml
+# Machine-readable policy for git hooks and Claude Code hooks.
+# Human-readable rules live in CLAUDE.md. This file drives enforcement.
+# See design spec: docs/superpowers/specs/2026-04-05-template-enforcement-overhaul-design.md
+
+version: "1.0.0"
+
+# --- Git pre-commit: hard gates ---
+pre_commit:
+  max_file_lines: 150
+  file_header:
+    required: true
+    patterns:
+      python:    "^# Area: .+\\n# PRD: .+\\n# NOTE: .+"
+      shell:     "^# Area: .+\\n# PRD: .+\\n# NOTE: .+"
+      js:        "^// Area: .+\\n// PRD: .+\\n// NOTE: .+"
+      ts:        "^// Area: .+\\n// PRD: .+\\n// NOTE: .+"
+      go:        "^// Area: .+\\n// PRD: .+\\n// NOTE: .+"
+      rust:      "^// Area: .+\\n// PRD: .+\\n// NOTE: .+"
+      java:      "^// Area: .+\\n// PRD: .+\\n// NOTE: .+"
+      css:       "^/\\* Area: .+\\n\\s*PRD: .+\\n\\s*NOTE: .+"
+      html:      "^<!-- Area: .+\\n\\s*PRD: .+\\n\\s*NOTE: .+"
+    extensions:
+      python:  [".py"]
+      shell:   [".sh", ".bash", ".zsh"]
+      js:      [".js", ".jsx", ".mjs", ".cjs"]
+      ts:      [".ts", ".tsx"]
+      go:      [".go"]
+      rust:    [".rs"]
+      java:    [".java"]
+      css:     [".css", ".scss", ".less"]
+      html:    [".html", ".htm"]
+  hardcoded_values:
+    block:
+      - pattern: "https?://[^\\s\"']+"
+        description: "URL literal"
+        exclude_files: ["**/test_*", "**/conftest.py", "**/*_test.*"]
+      - pattern: "sk-[a-zA-Z0-9]{20,}"
+        description: "API key pattern"
+      - pattern: "(?:^|/)(?:Users|home)/\\w+"
+        description: "Absolute home directory path"
+      - pattern: "\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b"
+        description: "IP address literal"
+        exclude_files: ["**/test_*", "**/conftest.py", "**/*_test.*"]
+      - pattern: "api[_-]?key\\s*=\\s*[\"'][^\"']+"
+        description: "Inline API key assignment"
+      - pattern: "password\\s*=\\s*[\"'][^\"']+"
+        description: "Inline password assignment"
+    allowlist:
+      - pattern: "http://localhost"
+        reason: "Local development server — not a production URL"
+      - pattern: "http://127.0.0.1"
+        reason: "Loopback address — not a production URL"
+      - pattern: "https://example.com"
+        reason: "RFC 2606 reserved domain for documentation examples"
+  test_commands:
+    - "pytest tests/"
+  source_dirs: ["src/"]
+  test_dirs: ["tests/"]
+  exclude_dirs: [".git", "__pycache__", "node_modules", ".venv", "venv"]
+
+# --- Claude Code PostToolUse: advisory warnings ---
+advisory:
+  hardcoded_values:
+    warn:
+      - pattern: "\\b[A-Z_]{2,}\\s*=\\s*\\d+"
+        description: "Possible magic number assignment"
+      - pattern: "timeout\\s*=\\s*\\d+"
+        description: "Possible hardcoded timeout"
+      - pattern: "\"(claude|gpt|gemini|llama|mistral)[\\w-]*\""
+        description: "Possible hardcoded model name"
+      - pattern: "\\bport\\s*=\\s*\\d+"
+        description: "Possible hardcoded port"
+      - pattern: "sleep\\(\\d+\\)"
+        description: "Possible hardcoded delay"
+      - pattern: "max_retries\\s*=\\s*\\d+"
+        description: "Possible hardcoded retry count"
+  dismissal_log: ".claude/advisory_dismissals.json"
+  min_justification_length: 20
+
+# --- Claude Code PreToolUse: read gate ---
+read_gate:
+  module_map:
+    # Machine-readable source of truth for module-to-directory mapping.
+    # CONTEXT.md Architecture & File Map is the human-readable view.
+    # Keep both in sync. Add entries as modules are created.
+    # Example:
+    # ingestion:
+    #   source_dir: "src/ingestion/"
+    #   context_file: "ContextModuleDocumentation/CONTEXT_ingestion.md"
+  confirmation_pattern: "^CONTEXT READ: .+ \\| state: .+ \\| last change: .+ \\| open tasks: \\d+"
+  session_state_file: ".claude/session_reads.json"
+
+# --- Claude Code Stop: compliance monitor ---
+compliance_monitor:
+  agent_definition: "agents/compliance_monitor.md"
+  report_path: ".claude/last_compliance_report.json"
+  checks:
+    - id: "file_registration"
+      description: "Every source file exists in CONTEXT.md and its module CONTEXT_*.md"
+    - id: "line_count_accuracy"
+      description: "Line counts in CONTEXT files match wc -l"
+    - id: "interface_contracts"
+      description: "Filenames in Interface Contracts table appear in producer/consumer files (signal check — dynamic filenames may not match)"
+    - id: "version_incremented"
+      description: "Every .md file touched has its version incremented vs last commit"
+    - id: "removed_files_cleaned"
+      description: "No deleted files still referenced in CONTEXT files"
+    - id: "advisory_dismissals_reviewed"
+      description: "Every dismissed advisory warning has a justification of min_justification_length+ chars"

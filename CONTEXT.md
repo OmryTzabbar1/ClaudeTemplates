@@ -51,6 +51,7 @@ Version: 2.0.0
 
 <!-- Most recent first. Keep 10-20 entries. Oldest roll off. Include file names and test counts. -->
 
+- **2026-04-05:** Created compliance_config.yaml — machine-readable policy for git hooks and Claude Code hooks (114 lines)
 - **YYYY-MM-DD:** Created project scaffolding — CLAUDE.md, CONTEXT.md, CONTEXT_MODULE.md, directory structure
 
 ---
@@ -124,7 +125,7 @@ project/
 ├── CLAUDE.md                           # project rules (tiered)
 ├── CONTEXT.md                          # this file — living project snapshot
 ├── CONTEXT_MODULE.md                   # template for new context files
-├── compliance_config.yaml              # machine-readable policy for hooks
+├── compliance_config.yaml (114 lines)  # machine-readable policy for hooks
 ├── setup.sh                            # project setup with safe hook install
 ├── ContextModuleDocumentation/
 │   ├── CONTEXT_[module1].md           # [module 1] state
