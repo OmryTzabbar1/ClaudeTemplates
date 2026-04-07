@@ -85,6 +85,7 @@ get_language() {
         *.go)                       echo "go" ;;
         *.rs)                       echo "rust" ;;
         *.java)                     echo "java" ;;
+        *.cs)                       echo "csharp" ;;
         *.css|*.scss|*.less)        echo "css" ;;
         *.html|*.htm)               echo "html" ;;
         *)                          echo "" ;;
@@ -105,7 +106,7 @@ check_header() {
             head -3 "$file" | grep -q "^# PRD:" && \
             head -3 "$file" | grep -q "^# NOTE:" && has_header=true
             ;;
-        js|ts|go|rust|java)
+        js|ts|go|rust|java|csharp)
             head -3 "$file" | grep -q "^// Area:" && \
             head -3 "$file" | grep -q "^// PRD:" && \
             head -3 "$file" | grep -q "^// NOTE:" && has_header=true
@@ -135,7 +136,7 @@ check_hardcoded() {
     local line_num match
 
     # URL literals (excluding allowlisted patterns and test files)
-    if [[ "$file" != *test_* && "$file" != *conftest* && "$file" != *_test.* ]]; then
+    if [[ "$file" != *test_* && "$file" != *conftest* && "$file" != *_test.* && "$file" != *Tests.cs ]]; then
         while IFS=: read -r line_num match; do
             # Check against allowlist
             local allowed=false
@@ -162,7 +163,7 @@ check_hardcoded() {
     done < <(grep -n -E "(/Users|/home)/\w+" "$file" 2>/dev/null || true)
 
     # IP addresses (excluding test files)
-    if [[ "$file" != *test_* && "$file" != *conftest* && "$file" != *_test.* ]]; then
+    if [[ "$file" != *test_* && "$file" != *conftest* && "$file" != *_test.* && "$file" != *Tests.cs ]]; then
         while IFS=: read -r line_num match; do
             local allowed=false
             if [[ "$match" == *"127.0.0.1"* ]]; then
@@ -210,6 +211,48 @@ for file in $STAGED_FILES; do
         echo "✓ PASS  $file"
         pass
     fi
+done
+
+# --- TDD check: every staged source file with logic must have a test file ---
+# Customize the file patterns, test dirs, and method signatures for your language.
+# This example checks .cs files; adapt for .py, .ts, etc.
+for file in $STAGED_FILES; do
+    [ -f "$file" ] || continue
+    is_source_file "$file" || continue
+
+    lang=$(get_language "$file")
+    [ -z "$lang" ] && continue
+
+    # Language-specific TDD check — extend as needed
+    case "$lang" in
+        csharp)
+            # Skip if file has no method signatures (data-only SOs, enums)
+            if ! grep -qE "(void |bool |float |int |string |Transform |IEnumerator )" "$file" 2>/dev/null; then
+                continue
+            fi
+            base_name=$(basename "$file" .cs)
+            # Search common Unity test locations
+            test_found=false
+            for test_dir in "Assets/Tests/EditMode" "Assets/Tests/PlayMode" "tests"; do
+                if [ -f "${test_dir}/${base_name}Tests.cs" ]; then
+                    test_found=true
+                    break
+                fi
+            done
+            if ! $test_found; then
+                fail "${file}:  no test file found (expected ${base_name}Tests.cs)"
+            fi
+            ;;
+        python)
+            base_name=$(basename "$file" .py)
+            if [ ! -f "tests/test_${base_name}.py" ]; then
+                # Only warn for files with function/class definitions
+                if grep -qE "^(def |class )" "$file" 2>/dev/null; then
+                    fail "${file}:  no test file found (expected tests/test_${base_name}.py)"
+                fi
+            fi
+            ;;
+    esac
 done
 
 # --- Run tests ---

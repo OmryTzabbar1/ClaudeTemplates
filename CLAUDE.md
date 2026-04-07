@@ -2,7 +2,7 @@
 
 **IMPORTANT: Read this entire file before making ANY code changes.**
 
-Version: 2.0.0
+Version: 2.1.0
 
 ---
 
@@ -10,7 +10,7 @@ Version: 2.0.0
 
 These rules are hard constraints. Violations are caught by hooks and block commits.
 
-1. **TDD** — Write the test first. Then write the minimum code to make it pass. No untested code ships. No exceptions.
+1. **TDD** — Write the test first. Then write the minimum code to make it pass. No untested code ships. No exceptions. Every source file that contains logic (classes, methods, functions) must have a corresponding test file. Do NOT skip tests for "thin wrappers." Do NOT skip tests because "the underlying class is already tested." Do NOT defer tests to "integration testing later." Do NOT create a source file without creating its test file in the same task. If a file is too simple to test meaningfully, write a trivial test — do not skip it. *Enforced by pre-commit hook.*
 
 2. **150-line file limit** — All source files must stay under 150 lines. If a file exceeds this, refactor or split it before committing. *Enforced by pre-commit hook.*
 
@@ -21,7 +21,7 @@ These rules are hard constraints. Violations are caught by hooks and block commi
    | Language | Syntax |
    |----------|--------|
    | Python, Shell, Ruby, YAML | `# Area: ...` / `# PRD: ...` / `# NOTE: ...` |
-   | JS, TS, Go, Rust, Java, C | `// Area: ...` / `// PRD: ...` / `// NOTE: ...` |
+   | JS, TS, Go, Rust, Java, C, C# | `// Area: ...` / `// PRD: ...` / `// NOTE: ...` |
    | CSS | `/* Area: ... */` / `/* PRD: ... */` / `/* NOTE: ... */` |
    | HTML | `<!-- Area: ... -->` / `<!-- PRD: ... -->` / `<!-- NOTE: ... -->` |
 
@@ -65,6 +65,10 @@ Every implementation plan must open with:
 - Estimated completion confidence: [high/medium/low]
 - Split recommended: [yes/no]
 - Justification: [one sentence]
+
+### TDD in Plans
+
+Do NOT write implementation plans where any task creates a source file without a corresponding test file. Do NOT use "thin wrapper," "trivial delegation," "already tested via X," or "will be integration-tested" as justification for omitting tests from a plan task. Every task that creates a source file must also create or update a test file in the same task. If a file genuinely cannot be tested (e.g., Unity Gizmos rendering with no callable API), the plan must explicitly state "UNTESTABLE: [reason]" — and this must be reviewed and approved before implementation begins.
 
 ### Advisory Warning Response
 

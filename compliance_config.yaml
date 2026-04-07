@@ -22,6 +22,7 @@ pre_commit:
       go:        "^// Area: .+\\n// PRD: .+\\n// NOTE: .+"
       rust:      "^// Area: .+\\n// PRD: .+\\n// NOTE: .+"
       java:      "^// Area: .+\\n// PRD: .+\\n// NOTE: .+"
+      csharp:    "^// Area: .+\\n// PRD: .+\\n// NOTE: .+"
       css:       "^/\\* Area: .+\\n\\s*PRD: .+\\n\\s*NOTE: .+"
       html:      "^<!-- Area: .+\\n\\s*PRD: .+\\n\\s*NOTE: .+"
     extensions:
@@ -32,20 +33,21 @@ pre_commit:
       go:      [".go"]
       rust:    [".rs"]
       java:    [".java"]
+      csharp:  [".cs"]
       css:     [".css", ".scss", ".less"]
       html:    [".html", ".htm"]
   hardcoded_values:
     block:
       - pattern: "https?://[^\\s\"']+"
         description: "URL literal"
-        exclude_files: ["**/test_*", "**/conftest.py", "**/*_test.*"]
+        exclude_files: ["**/test_*", "**/conftest.py", "**/*_test.*", "**/*Tests.cs"]
       - pattern: "sk-[a-zA-Z0-9]{20,}"
         description: "API key pattern"
       - pattern: "(?:^|/)(?:Users|home)/\\w+"
         description: "Absolute home directory path"
       - pattern: "\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b"
         description: "IP address literal"
-        exclude_files: ["**/test_*", "**/conftest.py", "**/*_test.*"]
+        exclude_files: ["**/test_*", "**/conftest.py", "**/*_test.*", "**/*Tests.cs"]
       - pattern: "api[_-]?key\\s*=\\s*[\"'][^\"']+"
         description: "Inline API key assignment"
       - pattern: "password\\s*=\\s*[\"'][^\"']+"
