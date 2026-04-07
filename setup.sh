@@ -66,7 +66,7 @@ copy_if_missing "${SCRIPT_DIR}/CONTEXT_MODULE.md" "CONTEXT_MODULE.md"
 copy_if_missing "${SCRIPT_DIR}/compliance_config.yaml" "compliance_config.yaml"
 
 mkdir -p hooks agents
-for hook_file in parse_config.py pre-commit claude_read_gate.py claude_advisory_scan.py; do
+for hook_file in parse_config.py pre-commit claude_read_gate.py claude_advisory_scan.py claude_subagent_gate.py; do
     if [ -f "${SCRIPT_DIR}/hooks/${hook_file}" ]; then
         cp "${SCRIPT_DIR}/hooks/${hook_file}" "hooks/${hook_file}"
         chmod +x "hooks/${hook_file}"
@@ -157,6 +157,10 @@ HOOKS_CONFIG='{
       {
         "matcher": "Edit|Write",
         "command": "python3 hooks/claude_read_gate.py check \"$FILE_PATH\""
+      },
+      {
+        "matcher": "Agent",
+        "command": "python3 hooks/claude_subagent_gate.py"
       }
     ],
     "PostToolUse": [

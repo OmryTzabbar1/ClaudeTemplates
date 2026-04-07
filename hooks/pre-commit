@@ -179,6 +179,13 @@ check_hardcoded() {
     while IFS=: read -r line_num match; do
         fail "${file}:${line_num}  Inline secret: $(echo "$match" | head -c 50)"
     done < <(grep -n -E "(api[_-]?key|password)\s*=\s*[\"'][^\"']+" "$file" 2>/dev/null || true)
+
+    # C# hardcoded Color constructors in non-config files
+    if [[ "$file" == *.cs && "$file" != *Config* && "$file" != *Defaults* && "$file" != *Tests* ]]; then
+        while IFS=: read -r line_num match; do
+            fail "${file}:${line_num}  Hardcoded Color: $(echo "$match" | head -c 60)"
+        done < <(grep -n -E "new Color\([0-9]" "$file" 2>/dev/null || true)
+    fi
 }
 
 # --- Main: run checks on each staged source file ---
@@ -226,10 +233,8 @@ for file in $STAGED_FILES; do
     # Language-specific TDD check — extend as needed
     case "$lang" in
         csharp)
-            # Skip if file has no method signatures (data-only SOs, enums)
-            if ! grep -qE "(void |bool |float |int |string |Transform |IEnumerator )" "$file" 2>/dev/null; then
-                continue
-            fi
+            # ALL .cs source files need tests per CLAUDE.md — no exceptions.
+            # Even data-only SOs and enums get trivial tests.
             base_name=$(basename "$file" .cs)
             # Search common Unity test locations
             test_found=false

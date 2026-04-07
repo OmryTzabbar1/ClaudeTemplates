@@ -1,6 +1,6 @@
 # ContextModuleDocumentation/CONTEXT_hooks.md
 
-Version: 1.4.0
+Version: 1.5.0
 
 ---
 
@@ -18,6 +18,8 @@ The `hooks` module (`hooks/`) provides enforcement scripts for git pre-commit ga
 
 ## Recent Changes
 
+- **2026-04-06:** `claude_subagent_gate.py` — Created PreToolUse hook for Agent tool; injects CLAUDE.md compliance into subagent dispatches (97 lines)
+- **2026-04-06:** `pre-commit` — Added hardcoded Color() detection for C# non-config files; strict TDD check (all .cs files need tests, no heuristic skip)
 - **2026-04-05:** `claude_advisory_scan.py` — Created Claude Code PostToolUse advisory scanner (149 lines)
 - **2026-04-05:** `claude_read_gate.py` — Created Claude Code PreToolUse read gate hook (127 lines)
 - **2026-04-05:** `parse_config.py` — Created YAML dotted-key resolver for shell hook fallback (60 lines)
@@ -39,16 +41,17 @@ The `hooks` module (`hooks/`) provides enforcement scripts for git pre-commit ga
 
 ```
 hooks/
-├── pre-commit               (237 lines)  — git pre-commit hard gate; enforces headers, line limit, no hardcoded values
+├── pre-commit               (288 lines)  — git pre-commit hard gate; enforces headers, line limit, no hardcoded values, TDD, Color check
 ├── parse_config.py           (60 lines)  — YAML dotted-key resolver; outputs shell-friendly values
 ├── claude_read_gate.py      (127 lines)  — PreToolUse hook; blocks Edit/Write until CONTEXT file read
-└── claude_advisory_scan.py  (149 lines)  — PostToolUse hook; advisory hardcoded pattern scanner
+├── claude_advisory_scan.py  (149 lines)  — PostToolUse hook; advisory hardcoded pattern scanner
+└── claude_subagent_gate.py   (97 lines)  — PreToolUse hook; injects CLAUDE.md compliance into Agent dispatches
 
 tests/
 └── test_parse_config.py      (88 lines)  — 10 tests for parse_config.py
 ```
 
-Total: 661 lines across 5 files.
+Total: 809 lines across 6 files.
 
 ---
 
