@@ -1,0 +1,48 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/claude_read_gate.py check \"$FILE_PATH\""
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/claude_subagent_gate.py"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/claude_read_gate.py record \"$FILE_PATH\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/claude_advisory_scan.py scan \"$FILE_PATH\""
+          },
+          {
+            "type": "command",
+            "command": "python3 hooks/claude_token_monitor.py \"$FILE_PATH\""
+          }
+        ]
+      }
+    ]
+  }
+}
