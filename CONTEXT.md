@@ -1,6 +1,6 @@
 # CONTEXT.md
 
-Version: 2.1.0
+Version: 2.2.0
 
 ---
 
@@ -51,6 +51,7 @@ Version: 2.1.0
 
 <!-- Most recent first. Keep 10-20 entries. Oldest roll off. Include file names and test counts. -->
 
+- **2026-04-17:** Backported `CONTEXT_FILEMAP.md` extraction pattern from TowerDefense — added pointer line above the Architecture & File Map and a new "CONTEXT_FILEMAP.md Extraction" subsection with the trigger threshold (~200 lines), step-by-step extraction recipe, and "when NOT to extract" guidance. Bumped CONTEXT.md to v2.2.0.
 - **2026-04-17:** Backported README.md update reminders from TowerDefense — added bullet to CLAUDE.md Tier 3 Pre-Completion Compliance Checklist, new "README.md Maintenance" subsection in CONTEXT.md, README checklist item in CONTEXT_MODULE.md template. Bumped CLAUDE.md to v2.2.0, CONTEXT.md to v2.1.0, CONTEXT_MODULE.md to v1.2.0.
 - **2026-04-05:** Created `setup.sh` — safe project bootstrapping script; copies templates, installs hooks, configures .claude/settings.json and .gitignore (213 lines)
 - **2026-04-05:** Created `hooks/claude_advisory_scan.py` — Claude Code PostToolUse advisory scanner (149 lines)
@@ -127,6 +128,8 @@ Input → Processing → Output
 ## Architecture & File Map
 
 <!-- Every file in the project with line counts. Update after every change. -->
+
+> **When this file map gets large** (~200+ lines, or when subagents start reading CONTEXT.md just to find a file), extract it to a sibling `CONTEXT_FILEMAP.md` and replace this section with a one-line pointer plus an aggregate summary. See § CONTEXT_FILEMAP.md Extraction below for the convention. CONTEXT.md should stay readable in a single screen for subagents.
 
 ```
 project/
@@ -238,6 +241,27 @@ Each `ContextModuleDocumentation/CONTEXT_*.md` is the **living snapshot** of its
 - Bullet points and tables over prose — keep it scannable
 - Version it like every other doc
 - CONTEXT files are for **module state**; development rules live in CLAUDE.md
+
+---
+
+## CONTEXT_FILEMAP.md Extraction
+
+When `CONTEXT.md`'s Architecture & File Map grows past ~200 lines (it crowds out other sections and burns subagent tokens on lookup), extract the full file tree to a sibling `CONTEXT_FILEMAP.md` at the repo root. Subagents that need an overview keep reading CONTEXT.md; subagents that need an exact line count or a specific file path read CONTEXT_FILEMAP.md.
+
+### How to extract
+
+1. Move the entire `\`\`\`...\`\`\`` directory tree out of CONTEXT.md and into a new top-level `CONTEXT_FILEMAP.md` (with its own `Version: 1.0.0` header).
+2. Replace the file map in CONTEXT.md with:
+   - One-line pointer: `> **Full file tree with line counts extracted to \`CONTEXT_FILEMAP.md\`** to keep this file under token limits for subagent reads. When adding/removing/modifying files, update CONTEXT_FILEMAP.md.`
+   - An aggregate count line: `**Source file counts:** Module A (N), Module B (N), … = **N source files**` and the same for tests.
+3. From this point on, file additions/removals update `CONTEXT_FILEMAP.md` (not CONTEXT.md) — except the aggregate count, which still lives here.
+4. Bump CONTEXT.md's version (minor — structural change) and bump CONTEXT_FILEMAP.md per its own Version Decision Table on every subsequent edit.
+
+### When NOT to extract
+
+- The file map fits comfortably above the Interface Contracts table.
+- The project has fewer than ~30 source files.
+- Premature extraction adds an indirection without saving tokens.
 
 ---
 
