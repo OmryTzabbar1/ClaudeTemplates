@@ -1,6 +1,14 @@
 # ContextModuleDocumentation/CONTEXT_[MODULE].md
 
-Version: 1.2.0
+Version: 1.3.0
+
+<!--
+This is the EMPTY TEMPLATE. Copy it to `ContextModuleDocumentation/CONTEXT_<your-module>.md`
+and fill in the bracketed fields. For a worked example showing what a
+populated file looks like (real recent changes, real file map with line
+counts, real key decisions), see `templates/CONTEXT_MODULE_EXAMPLE.md`.
+-->
+
 
 ---
 

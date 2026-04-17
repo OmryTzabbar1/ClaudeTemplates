@@ -1,6 +1,6 @@
 # CONTEXT.md
 
-Version: 2.5.0
+Version: 2.6.0
 
 ---
 
@@ -51,6 +51,7 @@ Version: 2.5.0
 
 <!-- Most recent first. Keep 10-20 entries. Oldest roll off. Include file names and test counts. -->
 
+- **2026-04-17:** Added `templates/CONTEXT_MODULE_EXAMPLE.md` — populated example of a per-module CONTEXT file (fictional Config module, ~120 lines) showing what real Recent Changes, File Map line counts, Key Decisions, and a checked-off Module Change Checklist look like. Added a header pointer in `CONTEXT_MODULE.md` (v1.2.0→v1.3.0) directing users to the example. Bumped CONTEXT.md to v2.6.0.
 - **2026-04-17:** Backported `.gitignore` from TowerDefense — added `.gitignore` at CT root (Python + Claude session files + IDE + OS) and a generic `templates/gitignore` (same content plus a commented Unity section for downstream Unity projects). Updated `setup.sh` (246→255 lines): if the downstream project has no `.gitignore`, seed it from `templates/gitignore`; the existing per-entry append for Claude session files now acts as an idempotent backstop. Bumped CONTEXT.md to v2.5.0.
 - **2026-04-17:** Accuracy sweep — `setup.sh` (213→246 lines): (1) added `claude_token_monitor.py` to the hook copy loop — was missing despite being part of the live hook set, (2) replaced `HOOKS_CONFIG` with the actual nested `{matcher, hooks: [{type, command}]}` JSON shape used by `.claude/settings.json` and added the token-monitor PostToolUse entry, (3) added a `copy_if_missing` step that places `templates/PROJECT_README.md` as the new project's `README.md`, (4) renumbered Next Steps to put README customization first. CONTEXT.md file map: synced hooks/ section — added `claude_subagent_gate.py` and `claude_token_monitor.py`, corrected pre-commit/parse_config/read_gate/advisory_scan line counts to match `wc -l`. Bumped CONTEXT.md to v2.4.0.
 - **2026-04-17:** Added `templates/PROJECT_README.md` — front-door README template for downstream projects scaffolded from this repo (separate from the meta-template's own README). Mirrors the structure used in TowerDefense's README: pitch, status table, tech stack, repo layout, conventions, getting-started, versioning. Includes a header comment explaining its purpose and the README update triggers. Bumped CONTEXT.md to v2.3.0.
@@ -144,7 +145,8 @@ project/
 ├── .gitignore                          # CT's own ignore rules (Python, IDE, OS, Claude session files)
 ├── templates/
 │   ├── PROJECT_README.md               # front-door README template for downstream projects
-│   └── gitignore                        # generic .gitignore template (downstream projects; setup.sh seeds it)
+│   ├── gitignore                        # generic .gitignore template (downstream projects; setup.sh seeds it)
+│   └── CONTEXT_MODULE_EXAMPLE.md        # populated worked example of a per-module CONTEXT file
 ├── ContextModuleDocumentation/
 │   ├── CONTEXT_hooks.md               # hooks module state
 │   ├── CONTEXT_[module1].md           # [module 1] state
