@@ -1,6 +1,6 @@
 # CONTEXT.md
 
-Version: 2.2.0
+Version: 2.3.0
 
 ---
 
@@ -51,6 +51,7 @@ Version: 2.2.0
 
 <!-- Most recent first. Keep 10-20 entries. Oldest roll off. Include file names and test counts. -->
 
+- **2026-04-17:** Added `templates/PROJECT_README.md` — front-door README template for downstream projects scaffolded from this repo (separate from the meta-template's own README). Mirrors the structure used in TowerDefense's README: pitch, status table, tech stack, repo layout, conventions, getting-started, versioning. Includes a header comment explaining its purpose and the README update triggers. Bumped CONTEXT.md to v2.3.0.
 - **2026-04-17:** Backported `CONTEXT_FILEMAP.md` extraction pattern from TowerDefense — added pointer line above the Architecture & File Map and a new "CONTEXT_FILEMAP.md Extraction" subsection with the trigger threshold (~200 lines), step-by-step extraction recipe, and "when NOT to extract" guidance. Bumped CONTEXT.md to v2.2.0.
 - **2026-04-17:** Backported README.md update reminders from TowerDefense — added bullet to CLAUDE.md Tier 3 Pre-Completion Compliance Checklist, new "README.md Maintenance" subsection in CONTEXT.md, README checklist item in CONTEXT_MODULE.md template. Bumped CLAUDE.md to v2.2.0, CONTEXT.md to v2.1.0, CONTEXT_MODULE.md to v1.2.0.
 - **2026-04-05:** Created `setup.sh` — safe project bootstrapping script; copies templates, installs hooks, configures .claude/settings.json and .gitignore (213 lines)
@@ -138,6 +139,8 @@ project/
 ├── CONTEXT_MODULE.md                   # template for new context files
 ├── compliance_config.yaml (114 lines)  # machine-readable policy for hooks
 ├── setup.sh              (213 lines)    # project setup with safe hook install
+├── templates/
+│   └── PROJECT_README.md                # front-door README template for downstream projects
 ├── ContextModuleDocumentation/
 │   ├── CONTEXT_hooks.md               # hooks module state
 │   ├── CONTEXT_[module1].md           # [module 1] state
