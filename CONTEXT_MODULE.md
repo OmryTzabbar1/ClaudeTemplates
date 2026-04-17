@@ -1,6 +1,6 @@
 # ContextModuleDocumentation/CONTEXT_[MODULE].md
 
-Version: 1.1.0
+Version: 1.2.0
 
 ---
 
@@ -94,5 +94,6 @@ Run this checklist after every change to this module. Do not skip items.
 - [ ] **Removed files** — If you deleted a file: remove it from the File Map above and from `CONTEXT.md` *(verified by compliance monitor)*
 - [ ] **Split files** — If you split a file: update the original's line count, add the new file(s) everywhere, update imports in consumers
 - [ ] **Interface changes** — If filenames or output formats changed: update the Interface Contracts table in `CONTEXT.md` *(verified by compliance monitor)*
+- [ ] **README.md** — If this change moves a phase status, alters the tech stack, restructures the repo layout, changes getting-started steps, or adds/removes the module: update `README.md` and bump its version. Routine module work does NOT require a README touch — see CONTEXT.md § README.md Maintenance for the trigger list.
 - [ ] **Version bump** — Increment this file's version per the Version Decision Table above
 - [ ] **Recent Changes** — Add a dated bullet to the Recent Changes section above

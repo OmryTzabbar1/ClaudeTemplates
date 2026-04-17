@@ -2,7 +2,7 @@
 
 **IMPORTANT: Read this entire file before making ANY code changes.**
 
-Version: 2.1.0
+Version: 2.2.0
 
 ---
 
@@ -116,3 +116,4 @@ Before marking any task complete, all of the following must be true.
 - [ ] Interface Contracts table matches actual filenames in code
 - [ ] All `.md` files have semantic versions, incremented if touched
 - [ ] Plans synced with code changes
+- [ ] `README.md` reflects current reality if any of these changed: project phase/status, tech stack, repo layout, getting-started steps, or module list (README version bumped if edited). Routine intra-module work does NOT require a README touch — see CONTEXT.md § README.md Maintenance for the trigger list.

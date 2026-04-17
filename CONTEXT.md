@@ -1,6 +1,6 @@
 # CONTEXT.md
 
-Version: 2.0.0
+Version: 2.1.0
 
 ---
 
@@ -51,6 +51,7 @@ Version: 2.0.0
 
 <!-- Most recent first. Keep 10-20 entries. Oldest roll off. Include file names and test counts. -->
 
+- **2026-04-17:** Backported README.md update reminders from TowerDefense — added bullet to CLAUDE.md Tier 3 Pre-Completion Compliance Checklist, new "README.md Maintenance" subsection in CONTEXT.md, README checklist item in CONTEXT_MODULE.md template. Bumped CLAUDE.md to v2.2.0, CONTEXT.md to v2.1.0, CONTEXT_MODULE.md to v1.2.0.
 - **2026-04-05:** Created `setup.sh` — safe project bootstrapping script; copies templates, installs hooks, configures .claude/settings.json and .gitignore (213 lines)
 - **2026-04-05:** Created `hooks/claude_advisory_scan.py` — Claude Code PostToolUse advisory scanner (149 lines)
 - **2026-04-05:** Created `hooks/claude_read_gate.py` — Claude Code PreToolUse read gate (127 lines)
@@ -237,6 +238,20 @@ Each `ContextModuleDocumentation/CONTEXT_*.md` is the **living snapshot** of its
 - Bullet points and tables over prose — keep it scannable
 - Version it like every other doc
 - CONTEXT files are for **module state**; development rules live in CLAUDE.md
+
+---
+
+## README.md Maintenance
+
+`README.md` is the project front door for newcomers and external readers. It is NOT a per-change log — most module work does not touch it. Update it (and bump its version) when any of the following changes:
+
+- **Project phase or status** (e.g., a phase moves from "Not started" to "In progress" or "Complete")
+- **Tech stack** (language version bump, new core dependency, framework swap)
+- **Repo layout** (new top-level directory, module added/removed/renamed)
+- **Getting-started steps** (anything a fresh clone needs to do differently)
+- **The module list** in CONTEXT.md grows or shrinks (the README's repo-layout module list should match)
+
+Routine intra-module work — adding a feature, fixing a bug, refactoring a file — does NOT require a README touch. CONTEXT.md and the relevant `CONTEXT_*.md` are sufficient.
 
 ---
 
