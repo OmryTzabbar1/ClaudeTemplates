@@ -1,6 +1,6 @@
 # CONTEXT.md
 
-Version: 2.3.0
+Version: 2.4.0
 
 ---
 
@@ -51,6 +51,7 @@ Version: 2.3.0
 
 <!-- Most recent first. Keep 10-20 entries. Oldest roll off. Include file names and test counts. -->
 
+- **2026-04-17:** Accuracy sweep — `setup.sh` (213→246 lines): (1) added `claude_token_monitor.py` to the hook copy loop — was missing despite being part of the live hook set, (2) replaced `HOOKS_CONFIG` with the actual nested `{matcher, hooks: [{type, command}]}` JSON shape used by `.claude/settings.json` and added the token-monitor PostToolUse entry, (3) added a `copy_if_missing` step that places `templates/PROJECT_README.md` as the new project's `README.md`, (4) renumbered Next Steps to put README customization first. CONTEXT.md file map: synced hooks/ section — added `claude_subagent_gate.py` and `claude_token_monitor.py`, corrected pre-commit/parse_config/read_gate/advisory_scan line counts to match `wc -l`. Bumped CONTEXT.md to v2.4.0.
 - **2026-04-17:** Added `templates/PROJECT_README.md` — front-door README template for downstream projects scaffolded from this repo (separate from the meta-template's own README). Mirrors the structure used in TowerDefense's README: pitch, status table, tech stack, repo layout, conventions, getting-started, versioning. Includes a header comment explaining its purpose and the README update triggers. Bumped CONTEXT.md to v2.3.0.
 - **2026-04-17:** Backported `CONTEXT_FILEMAP.md` extraction pattern from TowerDefense — added pointer line above the Architecture & File Map and a new "CONTEXT_FILEMAP.md Extraction" subsection with the trigger threshold (~200 lines), step-by-step extraction recipe, and "when NOT to extract" guidance. Bumped CONTEXT.md to v2.2.0.
 - **2026-04-17:** Backported README.md update reminders from TowerDefense — added bullet to CLAUDE.md Tier 3 Pre-Completion Compliance Checklist, new "README.md Maintenance" subsection in CONTEXT.md, README checklist item in CONTEXT_MODULE.md template. Bumped CLAUDE.md to v2.2.0, CONTEXT.md to v2.1.0, CONTEXT_MODULE.md to v1.2.0.
@@ -138,7 +139,7 @@ project/
 ├── CONTEXT.md                          # this file — living project snapshot
 ├── CONTEXT_MODULE.md                   # template for new context files
 ├── compliance_config.yaml (114 lines)  # machine-readable policy for hooks
-├── setup.sh              (213 lines)    # project setup with safe hook install
+├── setup.sh              (246 lines)    # project setup with safe hook install
 ├── templates/
 │   └── PROJECT_README.md                # front-door README template for downstream projects
 ├── ContextModuleDocumentation/
@@ -148,10 +149,12 @@ project/
 ├── agents/
 │   └── compliance_monitor.md          # compliance auditor agent definition
 ├── hooks/
-│   ├── pre-commit         (237 lines)   # git pre-commit hard gate
-│   ├── parse_config.py    (60 lines)   # YAML parser fallback for shell hooks
-│   ├── claude_read_gate.py (127 lines)  # Claude Code PreToolUse read gate
-│   └── claude_advisory_scan.py (149 lines)  # Claude Code PostToolUse advisory scanner
+│   ├── pre-commit                  (285 lines)  # git pre-commit hard gate
+│   ├── parse_config.py             (72 lines)   # YAML parser fallback for shell hooks
+│   ├── claude_read_gate.py         (143 lines)  # Claude Code PreToolUse read gate
+│   ├── claude_subagent_gate.py     (121 lines)  # Claude Code PreToolUse subagent compliance gate
+│   ├── claude_advisory_scan.py     (148 lines)  # Claude Code PostToolUse advisory scanner
+│   └── claude_token_monitor.py     (114 lines)  # Claude Code PostToolUse token-size monitor for critical .md files
 ├── plans/
 │   └── YYYY-MM-DD-[plan-name].md      # implementation plan
 ├── docs/superpowers/specs/

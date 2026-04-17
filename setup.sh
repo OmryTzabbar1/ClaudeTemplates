@@ -66,7 +66,7 @@ copy_if_missing "${SCRIPT_DIR}/CONTEXT_MODULE.md" "CONTEXT_MODULE.md"
 copy_if_missing "${SCRIPT_DIR}/compliance_config.yaml" "compliance_config.yaml"
 
 mkdir -p hooks agents
-for hook_file in parse_config.py pre-commit claude_read_gate.py claude_advisory_scan.py claude_subagent_gate.py; do
+for hook_file in parse_config.py pre-commit claude_read_gate.py claude_advisory_scan.py claude_subagent_gate.py claude_token_monitor.py; do
     if [ -f "${SCRIPT_DIR}/hooks/${hook_file}" ]; then
         cp "${SCRIPT_DIR}/hooks/${hook_file}" "hooks/${hook_file}"
         chmod +x "hooks/${hook_file}"
@@ -77,6 +77,10 @@ done
 if [ -f "${SCRIPT_DIR}/agents/compliance_monitor.md" ]; then
     cp "${SCRIPT_DIR}/agents/compliance_monitor.md" "agents/compliance_monitor.md"
     info "Copied agents/compliance_monitor.md"
+fi
+
+if [ -f "${SCRIPT_DIR}/templates/PROJECT_README.md" ]; then
+    copy_if_missing "${SCRIPT_DIR}/templates/PROJECT_README.md" "README.md"
 fi
 
 echo ""
@@ -156,21 +160,45 @@ HOOKS_CONFIG='{
     "PreToolUse": [
       {
         "matcher": "Edit|Write",
-        "command": "python3 hooks/claude_read_gate.py check \"$FILE_PATH\""
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/claude_read_gate.py check \"$FILE_PATH\""
+          }
+        ]
       },
       {
         "matcher": "Agent",
-        "command": "python3 hooks/claude_subagent_gate.py"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/claude_subagent_gate.py"
+          }
+        ]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Read",
-        "command": "python3 hooks/claude_read_gate.py record \"$FILE_PATH\""
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/claude_read_gate.py record \"$FILE_PATH\""
+          }
+        ]
       },
       {
         "matcher": "Edit|Write",
-        "command": "python3 hooks/claude_advisory_scan.py scan \"$FILE_PATH\""
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/claude_advisory_scan.py scan \"$FILE_PATH\""
+          },
+          {
+            "type": "command",
+            "command": "python3 hooks/claude_token_monitor.py \"$FILE_PATH\""
+          }
+        ]
       }
     ]
   }
@@ -210,8 +238,9 @@ echo "Setup complete!"
 echo "==============="
 echo ""
 echo "Next steps:"
-echo "  1. Fill in CLAUDE.md placeholders (project name, description)"
-echo "  2. Fill in CONTEXT.md placeholders (architecture, terminology)"
-echo "  3. Add module entries to compliance_config.yaml read_gate.module_map"
-echo "  4. Run your first Claude Code session"
+echo "  1. Fill in README.md placeholders (project name, pitch, tech stack, getting-started)"
+echo "  2. Fill in CLAUDE.md placeholders (project name, description)"
+echo "  3. Fill in CONTEXT.md placeholders (architecture, terminology)"
+echo "  4. Add module entries to compliance_config.yaml read_gate.module_map"
+echo "  5. Run your first Claude Code session"
 echo ""
