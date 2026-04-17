@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# Claude Code session files (machine-local; never commit)
+.claude/session_reads.json
+.claude/session_reads.json.lock
+.claude/advisory_dismissals.json
+.claude/last_compliance_report.json
+.claude/worktrees/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Unity (uncomment if this is a Unity project)
+# [Ll]ibrary/
+# [Tt]emp/
+# [Oo]bj/
+# [Bb]uild/
+# [Bb]uilds/
+# [Ll]ogs/
+# [Uu]ser[Ss]ettings/
+# *.csproj
+# *.unityproj
+# *.sln
+# *.suo
+# *.user
+# *.userprefs
+# *.pidb
+# *.booproj
+# *.svd
+# *.pdb
+# *.mdb
+# *.opendb
+# *.VC.db
+# sysinfo.txt
+# crashlytics-build.properties

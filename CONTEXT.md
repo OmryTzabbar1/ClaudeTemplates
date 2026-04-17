@@ -1,6 +1,6 @@
 # CONTEXT.md
 
-Version: 2.4.0
+Version: 2.5.0
 
 ---
 
@@ -51,6 +51,7 @@ Version: 2.4.0
 
 <!-- Most recent first. Keep 10-20 entries. Oldest roll off. Include file names and test counts. -->
 
+- **2026-04-17:** Backported `.gitignore` from TowerDefense — added `.gitignore` at CT root (Python + Claude session files + IDE + OS) and a generic `templates/gitignore` (same content plus a commented Unity section for downstream Unity projects). Updated `setup.sh` (246→255 lines): if the downstream project has no `.gitignore`, seed it from `templates/gitignore`; the existing per-entry append for Claude session files now acts as an idempotent backstop. Bumped CONTEXT.md to v2.5.0.
 - **2026-04-17:** Accuracy sweep — `setup.sh` (213→246 lines): (1) added `claude_token_monitor.py` to the hook copy loop — was missing despite being part of the live hook set, (2) replaced `HOOKS_CONFIG` with the actual nested `{matcher, hooks: [{type, command}]}` JSON shape used by `.claude/settings.json` and added the token-monitor PostToolUse entry, (3) added a `copy_if_missing` step that places `templates/PROJECT_README.md` as the new project's `README.md`, (4) renumbered Next Steps to put README customization first. CONTEXT.md file map: synced hooks/ section — added `claude_subagent_gate.py` and `claude_token_monitor.py`, corrected pre-commit/parse_config/read_gate/advisory_scan line counts to match `wc -l`. Bumped CONTEXT.md to v2.4.0.
 - **2026-04-17:** Added `templates/PROJECT_README.md` — front-door README template for downstream projects scaffolded from this repo (separate from the meta-template's own README). Mirrors the structure used in TowerDefense's README: pitch, status table, tech stack, repo layout, conventions, getting-started, versioning. Includes a header comment explaining its purpose and the README update triggers. Bumped CONTEXT.md to v2.3.0.
 - **2026-04-17:** Backported `CONTEXT_FILEMAP.md` extraction pattern from TowerDefense — added pointer line above the Architecture & File Map and a new "CONTEXT_FILEMAP.md Extraction" subsection with the trigger threshold (~200 lines), step-by-step extraction recipe, and "when NOT to extract" guidance. Bumped CONTEXT.md to v2.2.0.
@@ -139,9 +140,11 @@ project/
 ├── CONTEXT.md                          # this file — living project snapshot
 ├── CONTEXT_MODULE.md                   # template for new context files
 ├── compliance_config.yaml (114 lines)  # machine-readable policy for hooks
-├── setup.sh              (246 lines)    # project setup with safe hook install
+├── setup.sh              (255 lines)    # project setup with safe hook install
+├── .gitignore                          # CT's own ignore rules (Python, IDE, OS, Claude session files)
 ├── templates/
-│   └── PROJECT_README.md                # front-door README template for downstream projects
+│   ├── PROJECT_README.md               # front-door README template for downstream projects
+│   └── gitignore                        # generic .gitignore template (downstream projects; setup.sh seeds it)
 ├── ContextModuleDocumentation/
 │   ├── CONTEXT_hooks.md               # hooks module state
 │   ├── CONTEXT_[module1].md           # [module 1] state

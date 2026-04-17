@@ -227,6 +227,15 @@ add_gitignore() {
     info "Added $entry to .gitignore"
 }
 
+# If the project has no .gitignore yet, seed it from the baseline template
+# (Python + Claude session files + IDE + OS + commented Unity section).
+if [ ! -f ".gitignore" ] && [ -f "${SCRIPT_DIR}/templates/gitignore" ]; then
+    cp "${SCRIPT_DIR}/templates/gitignore" ".gitignore"
+    info "Seeded .gitignore from templates/gitignore"
+fi
+
+# Idempotent backstop: ensure the Claude session files are ignored even
+# if the project already had a .gitignore that didn't include them.
 add_gitignore ".claude/session_reads.json"
 add_gitignore ".claude/advisory_dismissals.json"
 add_gitignore ".claude/last_compliance_report.json"
