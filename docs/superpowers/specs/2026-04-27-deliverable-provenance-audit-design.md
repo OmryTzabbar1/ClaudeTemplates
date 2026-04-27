@@ -1,8 +1,10 @@
 # Deliverable Provenance Audit — Design Spec
 
-Version: 1.0.0
+Version: 1.1.0
 Date: 2026-04-27
 Status: proposed
+
+**Changes since 1.0.0:** parser versioning table rephrased to cover same-count-different-set rewrites; local parser `VERSION` must be `local-`-prefixed; empty Provenance file behavior split by whether inventory is set; multi-deliverable ID namespacing via opt-in `key:` field; migration aborts if `## Script Registry` heading not found; previously-open decisions (`ID` column heading, `parser_version` required pin) locked.
 
 ---
 
@@ -54,7 +56,7 @@ Eight artifacts in `templates/`:
 4. **`parsers/__init__.py`** — declares the parser interface contract in a docstring. No parser registry; discovery is by file presence in `parsers/` and `parsers/local/`.
 5. **`parsers/narrative_md.py`** — first parser. Detects `<!--\s*id:\s*([\w-]+)\s*-->` markers in markdown. Carries a `VERSION` constant.
 6. **`compliance_config.yaml`** — schema additions:
-   - `deliverable_inventory: [{path, parser, parser_version}, ...]` (list, optional; empty/missing → reverse direction skipped)
+   - `deliverable_inventory: [{path, parser, parser_version, key?}, ...]` (list, optional; `key` is opt-in but must be all-or-nothing across entries; empty/missing list → reverse direction skipped)
    - `compliance_monitor.provenance_strict: false` (default; promotes WARN to FAIL when true)
    - `compliance_monitor.checks` adds `provenance_integrity` (CHECK 7)
 7. **`agents/compliance_monitor.md`** — adds CHECK 7 spec; adds `docs/DELIVERABLE_PROVENANCE.md` to Inputs; adds parser-loading from `parsers/` and `parsers/local/`.
@@ -82,10 +84,51 @@ Single section. Three-column markdown table:
 
 **Rules:**
 
+- The ID column heading text is exactly `ID`.
 - ID column values must be unique within the file.
-- ID format: `[A-Za-z0-9_-]+`, ≤ 32 chars. Recommended convention `<group>-<finding-shorthand>` (e.g. `p5-chi`, `fig2`, `endpoint-create-user`). Convention is recommended in ADR-0001's redirect block, not enforced.
+- ID format: `[A-Za-z0-9_:-]+`, ≤ 64 chars. Recommended unqualified convention `<group>-<finding-shorthand>` (e.g. `p5-chi`, `fig2`, `endpoint-create-user`). Multi-deliverable projects use `<key>:<id>` form; see § Multi-deliverable ID namespacing.
 - Deliverable element column is human prose. Not parsed by the audit.
 - Producing script(s) column is comma-separated `path:symbol` entries. The audit verifies `path` exists; `:symbol` is informational and not currently checked.
+
+---
+
+## Multi-deliverable ID namespacing
+
+A project that ships multiple deliverables (e.g., paper + dashboard, library + docs site) needs to disambiguate identical IDs across them. The schema supports this via an opt-in `key` field on each `deliverable_inventory` entry.
+
+**Rules:**
+
+- `key` is optional, but must be **all-or-nothing** across the entries in `deliverable_inventory`. Mixed (some entries with `key`, some without) → FAIL config error.
+- If no entry has `key` and the inventory has one entry: flat ID mode. Provenance rows use bare IDs (`p5-chi`).
+- If no entry has `key` and the inventory has ≥2 entries: FAIL config error. Multi-deliverable projects must namespace.
+- If every entry has `key`: namespaced mode is on for all entries. The audit applies a `<key>:` prefix to every ID returned by `parse()` before comparing to Provenance rows. Provenance rows must use the qualified `<key>:<id>` form.
+- `key` values must be unique across entries in `deliverable_inventory`.
+- `key` format: `[a-z][a-z0-9_-]*`, ≤ 16 chars (kept short because it appears in every Provenance row).
+
+Parsers themselves do not know about `key` — they always return flat IDs. The audit applies the prefix at comparison time. This keeps the parser interface unchanged across single- and multi-deliverable projects.
+
+**Example schema:**
+
+```yaml
+deliverable_inventory:
+  - path: output/results_narrative.md
+    parser: narrative_md
+    parser_version: "1.0.0"
+    key: paper
+  - path: dist/dashboard.html
+    parser: html_findings
+    parser_version: "1.0.0"
+    key: dashboard
+```
+
+**Provenance map for the multi-deliverable case:**
+
+| ID | Deliverable element | Producing script(s) |
+|---|---|---|
+| paper:p5-chi | P5 chi-square in the paper | src/propositions/p5_oliver.py:_chi_square |
+| dashboard:p5-chi | P5 chi-square card in the dashboard | src/dashboard/cards.py:render_chi_square |
+
+A single-deliverable project may opt into namespacing pre-emptively (set `key` on its sole entry) if it expects to grow.
 
 ---
 
@@ -134,30 +177,49 @@ forward_direction (always runs when DELIVERABLE_PROVENANCE.md exists):
         If any path missing → WARN (FAIL if provenance_strict).
 
 reverse_direction (runs only when deliverable_inventory is non-empty):
-    For each {path, parser, parser_version} entry in deliverable_inventory:
+    Validate inventory shape:
+        If `key` is set on some entries but not others → FAIL config error.
+        If `key` is unset and inventory has ≥2 entries → FAIL config error.
+        If `key` values are not unique across entries → FAIL config error.
+        Let namespaced_mode = (every entry has `key`).
+
+    all_detected_ids = empty set
+    For each {path, parser, parser_version, key?} entry in deliverable_inventory:
         Resolve parser:
             Search parsers/local/<parser>.py first, then parsers/<parser>.py.
             If neither exists → FAIL the entry.
         Import parser module.
+        If parser.VERSION begins with "local-" but file is in parsers/  → FAIL the entry.
+        If parser.VERSION does NOT begin with "local-" but file is in parsers/local/ → FAIL the entry.
         Compare parser.VERSION to entry.parser_version.
-            On mismatch → WARN with both versions.
+            If entry.parser_version is missing → FAIL config error.
+            If mismatch → WARN with both versions.
         Read file at entry.path.
             If missing → FAIL the entry.
         Try parser.parse(contents).
             On exception → FAIL the entry with traceback.
         detected_ids = result of parse()
-        provenance_ids = IDs from DELIVERABLE_PROVENANCE.md ID column
-
-        forward_misses = detected_ids - provenance_ids
-        reverse_misses = provenance_ids - detected_ids
+        If namespaced_mode:
+            detected_ids = { f"{entry.key}:{id}" for id in detected_ids }
+        all_detected_ids |= detected_ids
 
         Always log (PASS or FAIL):
-            count_detected = len(detected_ids)
-            count_provenance = len(provenance_ids)
-            entry.path, entry.parser, entry.parser_version
+            count_detected_for_entry = len(detected_ids)
+            entry.path, entry.parser, entry.parser_version, entry.key (if set)
 
-        If forward_misses non-empty → WARN per element (FAIL if provenance_strict)
-        If reverse_misses non-empty → WARN per element (FAIL if provenance_strict)
+    provenance_ids = IDs from DELIVERABLE_PROVENANCE.md ID column.
+    If namespaced_mode:
+        For each id in provenance_ids: validate it matches `<known_key>:<rest>` form.
+        Any flat ID → FAIL with the row's deliverable element text.
+
+    Always log:
+        count_provenance = len(provenance_ids)
+
+    forward_misses = all_detected_ids - provenance_ids
+    reverse_misses = provenance_ids - all_detected_ids
+
+    If forward_misses non-empty → WARN per element (FAIL if provenance_strict)
+    If reverse_misses non-empty → WARN per element (FAIL if provenance_strict)
 ```
 
 The count-logging on every run (PASS or FAIL) surfaces silent shifts: "47 → 47" passes, "31 → 31" passes, but a delta from 47 to 31 over time is information the human reviewer wants. Logging on PASS is the cheap fix.
@@ -169,17 +231,26 @@ The count-logging on every run (PASS or FAIL) surfaces silent shifts: "47 → 47
 | Condition | Behavior |
 |---|---|
 | `deliverable_inventory` unset or empty list | Reverse direction SKIPPED with informational log; forward direction still runs. |
+| `deliverable_inventory` has mixed `key` (some entries set, some not) | FAIL config error: `key` must be all-or-nothing. |
+| `deliverable_inventory` has ≥2 entries with no `key` on any | FAIL config error: multi-deliverable inventories must namespace via `key`. |
+| Two `deliverable_inventory` entries with the same `key` | FAIL config error with the duplicate value. |
 | `path` field of an entry doesn't exist on disk | FAIL the entry (config error, regardless of `provenance_strict`). |
+| `parser_version` field omitted from a `deliverable_inventory` entry | FAIL config error (regardless of `provenance_strict`). The pin is required. |
 | `parser` name doesn't resolve to a file in `parsers/` or `parsers/local/` | FAIL the entry with `"unknown parser: <name>. Available: [...]"`. |
 | Parser module imports but raises during `parse()` | FAIL the entry with traceback; do not silently skip. |
 | Parser returns non-list, or list containing non-strings | FAIL with type error. Parser bug. |
-| Two `deliverable_inventory` entries detect overlapping IDs | Union the IDs (no error). A finding can be cited by multiple deliverables. |
+| Parser file in `parsers/` has `VERSION` starting with `local-` | FAIL with "canonical parsers must not use a `local-` VERSION". |
+| Parser file in `parsers/local/` has `VERSION` not starting with `local-` | FAIL with "local parsers must use a `local-`-prefixed VERSION (e.g. `local-1.0.0`)". |
+| Two parsers detect overlapping IDs in namespaced mode | No conflict by construction; namespace prefixes differ. |
 | `DELIVERABLE_PROVENANCE.md` missing | FAIL if `deliverable_inventory` is set; SKIP whole check otherwise. |
-| `DELIVERABLE_PROVENANCE.md` present but contains no rows | WARN — no IDs to compare; reverse direction passes vacuously. |
+| `DELIVERABLE_PROVENANCE.md` present, contains no rows, AND `deliverable_inventory` is set | FAIL — file exists but contributes nothing to the audit. |
+| `DELIVERABLE_PROVENANCE.md` present, contains no rows, AND `deliverable_inventory` is unset | SKIP the check; no comparison possible. |
 | Provenance row missing ID column or with empty ID | FAIL (malformed row; list the row's deliverable element for the human). |
 | Duplicate IDs within `DELIVERABLE_PROVENANCE.md` | FAIL with the list of duplicates. |
+| Provenance row uses a flat ID in namespaced mode (no `<key>:` prefix) | FAIL with the row's deliverable element text. |
+| Provenance row uses `<key>:<id>` form but `<key>` is not in `deliverable_inventory` | FAIL with the unknown key. |
 | Parser `VERSION` mismatch with `entry.parser_version` | WARN with both versions; do not block. |
-| Project-local parser shadows a template parser of the same name | Use the local one; log informationally. |
+| Project-local parser shadows a template parser of the same name | Use the local one; log informationally. The `local-` VERSION prefix surfaces the divergence in `parser_version` config. |
 
 ---
 
@@ -203,10 +274,9 @@ Each parser exports `VERSION` (semver). Each `deliverable_inventory` entry recor
 
 | Parser change | Bump |
 |---|---|
-| Bug fix that *adds* detection (parser previously missed valid findings) | MAJOR |
-| Bug fix that *removes* detection (parser previously matched invalid things) | MAJOR |
+| Any change to the *set* of IDs detected on the same input — additions, removals, or rename/key-shape changes (count may stay the same) | MAJOR |
 | New optional behavior gated behind a config field | MINOR |
-| Refactor, comment changes, performance with no detection change | PATCH |
+| Refactor, comment changes, performance with no change to the detected set | PATCH |
 
 Parser authors document the change in `parsers/CHANGELOG.md`. Projects do **not** auto-upgrade — `parser_version` in `compliance_config.yaml` pins the version a project tested with. To upgrade, the project owner manually bumps the config field and re-runs the compliance monitor; mismatches WARN until the bump.
 
@@ -225,6 +295,8 @@ This is a deliberate hybrid:
 
 The "single source of truth" property is preserved at the *interface contract* level (one signature, one return type, in `parsers/__init__.py`), not at the implementation level — the template owns the canonical implementations, projects own their extensions.
 
+**Local parser versioning.** A local parser must export a `VERSION` value with a `local-` prefix (e.g. `local-1.0.0`). The audit refuses to load `parsers/local/<name>.py` whose `VERSION` does not begin with `local-`, and refuses to load `parsers/<name>.py` whose `VERSION` does begin with `local-`. The convention surfaces divergence in `compliance_config.yaml` itself (the project's `parser_version: "local-1.0.0"` is visibly different from `parser_version: "1.0.0"`) and in the audit log, eliminating the silent-fork failure where a local parser shadows a template parser at the same version string.
+
 ---
 
 ## Migration plan (`setup.sh`)
@@ -236,17 +308,22 @@ if [ -f "docs/SCRIPT_PURPOSES.md" ] && [ ! -f "docs/DELIVERABLE_PROVENANCE.md" ]
     1. Verify clean git tree under docs/. If dirty: abort with
        "docs/SCRIPT_PURPOSES.md has unstaged changes. Stash or commit first,
         or pass --force-migrate to override."
-    2. Print the diff that would be applied: lines preserved (Deliverable →
+    2. Detect strip target. Search the file for a line matching
+       `^## Script Registry\s*$`. If not found: abort with
+       "Detected docs/SCRIPT_PURPOSES.md but no `## Script Registry` heading.
+        The file may have been customized (e.g., section retitled). Manual
+        review required; aborting migration."
+    3. Print the diff that would be applied: lines preserved (Deliverable →
        Code Provenance section + maintenance rules) vs lines stripped
        (Script Registry section, delimited by `## Script Registry` heading
        to next `---` or EOF).
-    3. If --dry-run: exit 0.
-    4. Else: prompt "Migrate? [y/N]". On y:
+    4. If --dry-run: exit 0.
+    5. Else: prompt "Migrate? [y/N]". On y:
          - Rename docs/SCRIPT_PURPOSES.md → docs/DELIVERABLE_PROVENANCE.md
          - Strip the Script Registry section using the delimiter rule above
          - Update internal references in the file (`Script Registry` →
            document removal; `SCRIPT_PURPOSES.md` → `DELIVERABLE_PROVENANCE.md`)
-    5. Print: "Migration complete. Next: add `ID` column to existing rows
+    6. Print: "Migration complete. Next: add `ID` column to existing rows
        in docs/DELIVERABLE_PROVENANCE.md, populate compliance_config.yaml's
        deliverable_inventory section, and re-run compliance_monitor."
 fi
@@ -307,8 +384,11 @@ After template changes are committed, the EO14173 project is migrated as its own
 
 ## Open questions (non-blocking)
 
-- **ID column heading text**: `ID` vs `Element ID` vs `Provenance ID`. Lean: `ID` (short, table-friendly). Decide at implementation time.
-- **`parser_version` field default behavior**: if omitted, accept any parser version (silent), or require pin (block)? Lean: require pin. A missing field is a config error, not a flexibility feature.
-- **Does the migration script also copy the EO14173 project's existing `Recent Changes` notes into `decisions/0002-eo14173-script-registry-cut.md` automatically?** Lean: no, manual. The backport task is small enough that hand-writing the ADR is reasonable, and auto-extraction adds setup.sh complexity for one-time benefit.
+The following were open in v1.0.0 and are now locked in this version:
 
-These are decisions that fall out of implementation, not architecture. None block writing the implementation plan.
+- **ID column heading text**: locked to `ID`. See § DELIVERABLE_PROVENANCE.md schema rule 1.
+- **`parser_version` default behavior**: locked to **required pin**. Missing `parser_version` is a config error and FAILs the audit regardless of `provenance_strict`. See § Failure modes.
+
+The remaining open question is left to the backport task:
+
+- **Whether the migration script auto-extracts the EO14173 project's existing `Recent Changes` notes into `decisions/0002-eo14173-script-registry-cut.md`.** Lean: no, manual. The backport plan author can decide; this is small enough that hand-writing the ADR adds no significant cost, and auto-extraction adds `setup.sh` complexity for one-time benefit.
