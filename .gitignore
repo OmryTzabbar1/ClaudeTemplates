@@ -15,6 +15,9 @@ dist/
 .claude/last_compliance_report.json
 .claude/worktrees/
 
+# Git worktrees (project-local feature branches; never commit)
+.worktrees/
+
 # IDE
 .vs/
 .vscode/
