@@ -1,8 +1,10 @@
 # Deliverable Provenance Audit — Design Spec
 
-Version: 1.1.0
+Version: 1.2.0
 Date: 2026-04-27
 Status: proposed
+
+**Changes since 1.1.0:** Tightened ID format rules to forbid `:` in flat-mode IDs and require exactly one `:` in namespaced-mode IDs (with the part before it matching a known `key`). Added matching failure mode: parsers returning an ID containing `:` → FAIL.
 
 **Changes since 1.0.0:** parser versioning table rephrased to cover same-count-different-set rewrites; local parser `VERSION` must be `local-`-prefixed; empty Provenance file behavior split by whether inventory is set; multi-deliverable ID namespacing via opt-in `key:` field; migration aborts if `## Script Registry` heading not found; previously-open decisions (`ID` column heading, `parser_version` required pin) locked.
 
@@ -86,7 +88,10 @@ Single section. Three-column markdown table:
 
 - The ID column heading text is exactly `ID`.
 - ID column values must be unique within the file.
-- ID format: `[A-Za-z0-9_:-]+`, ≤ 64 chars. Recommended unqualified convention `<group>-<finding-shorthand>` (e.g. `p5-chi`, `fig2`, `endpoint-create-user`). Multi-deliverable projects use `<key>:<id>` form; see § Multi-deliverable ID namespacing.
+- ID format depends on mode:
+  - **Flat mode** (single-entry inventory with no `key`): `[A-Za-z0-9_-]+`, ≤ 64 chars. **No colons permitted.**
+  - **Namespaced mode** (any entry has `key`): `<key>:<id>` form, **exactly one colon**. `<key>` must match a known key in `deliverable_inventory`. `<id>` portion is `[A-Za-z0-9_-]+`. Total length ≤ 64 chars (so the unqualified `<id>` can be up to `64 - len(key) - 1` chars; with the 16-char `key` cap, that is up to 47 chars).
+- Recommended unqualified convention: `<group>-<finding-shorthand>` (e.g. `p5-chi`, `fig2`, `endpoint-create-user`).
 - Deliverable element column is human prose. Not parsed by the audit.
 - Producing script(s) column is comma-separated `path:symbol` entries. The audit verifies `path` exists; `:symbol` is informational and not currently checked.
 
@@ -239,6 +244,7 @@ The count-logging on every run (PASS or FAIL) surfaces silent shifts: "47 → 47
 | `parser` name doesn't resolve to a file in `parsers/` or `parsers/local/` | FAIL the entry with `"unknown parser: <name>. Available: [...]"`. |
 | Parser module imports but raises during `parse()` | FAIL the entry with traceback; do not silently skip. |
 | Parser returns non-list, or list containing non-strings | FAIL with type error. Parser bug. |
+| Parser returns an ID containing `:` | FAIL — parsers must return well-formed flat IDs without colons. The namespace prefix is applied by the audit, not by the parser. |
 | Parser file in `parsers/` has `VERSION` starting with `local-` | FAIL with "canonical parsers must not use a `local-` VERSION". |
 | Parser file in `parsers/local/` has `VERSION` not starting with `local-` | FAIL with "local parsers must use a `local-`-prefixed VERSION (e.g. `local-1.0.0`)". |
 | Two parsers detect overlapping IDs in namespaced mode | No conflict by construction; namespace prefixes differ. |
