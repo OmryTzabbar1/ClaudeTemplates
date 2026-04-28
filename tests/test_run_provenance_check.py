@@ -231,3 +231,120 @@ compliance_monitor:
     assert rc != 0
     assert payload["status"] == "FAIL"
     assert any("no rows" in d.lower() for d in payload["details"])
+
+
+def test_runner_reverse_passes_when_ids_align(tmp_path):
+    cfg = """
+deliverable_inventory:
+  - path: docs/d.md
+    parser: narrative_md
+    parser_version: "1.0.0"
+compliance_monitor:
+  provenance_strict: false
+"""
+    prov = """\
+| ID  | Deliverable element | Producing script(s) |
+| --- | ------------------- | ------------------- |
+| foo | F                   | src/a.py            |
+| bar | B                   | src/a.py            |
+"""
+    parser_src = ('VERSION = "1.0.0"\nimport re\n'
+                  'def parse(s): return sorted(set(re.findall(r"<!--\\s*id:\\s*([\\w-]+)\\s*-->", s)))\n')
+    _fixture_repo(tmp_path, config_yaml=cfg, provenance_md=prov, parsers={"narrative_md": parser_src})
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.py").write_text("# stub\n")
+    (tmp_path / "docs" / "d.md").write_text("<!-- id: foo -->\n<!-- id: bar -->\n")
+
+    rc, payload, _ = _run(tmp_path)
+    assert rc == 0
+    assert payload["status"] == "PASS"
+    assert payload["reverse"]["status"] == "PASS"
+    assert payload["reverse"]["count_detected"] == 2
+    assert payload["reverse"]["count_provenance"] == 2
+
+
+def test_runner_reverse_warns_on_forward_miss(tmp_path):
+    """Detected ID with no Provenance row → WARN (FAIL in strict)."""
+    cfg = """
+deliverable_inventory:
+  - path: docs/d.md
+    parser: narrative_md
+    parser_version: "1.0.0"
+compliance_monitor:
+  provenance_strict: false
+"""
+    prov = """\
+| ID  | Deliverable element | Producing script(s) |
+| --- | ------------------- | ------------------- |
+| foo | F                   | src/a.py            |
+"""
+    parser_src = ('VERSION = "1.0.0"\nimport re\n'
+                  'def parse(s): return sorted(set(re.findall(r"<!--\\s*id:\\s*([\\w-]+)\\s*-->", s)))\n')
+    _fixture_repo(tmp_path, config_yaml=cfg, provenance_md=prov, parsers={"narrative_md": parser_src})
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.py").write_text("# stub\n")
+    (tmp_path / "docs" / "d.md").write_text("<!-- id: foo -->\n<!-- id: orphan -->\n")
+
+    rc, payload, _ = _run(tmp_path)
+    assert rc == 0
+    assert payload["reverse"]["status"] == "WARN"
+    assert "orphan" in str(payload["reverse"]["forward_misses"])
+
+
+def test_runner_reverse_warns_on_reverse_miss(tmp_path):
+    """Provenance row with no detected ID → WARN."""
+    cfg = """
+deliverable_inventory:
+  - path: docs/d.md
+    parser: narrative_md
+    parser_version: "1.0.0"
+compliance_monitor:
+  provenance_strict: false
+"""
+    prov = """\
+| ID    | Deliverable element | Producing script(s) |
+| ----- | ------------------- | ------------------- |
+| foo   | F                   | src/a.py            |
+| stale | S                   | src/a.py            |
+"""
+    parser_src = ('VERSION = "1.0.0"\nimport re\n'
+                  'def parse(s): return sorted(set(re.findall(r"<!--\\s*id:\\s*([\\w-]+)\\s*-->", s)))\n')
+    _fixture_repo(tmp_path, config_yaml=cfg, provenance_md=prov, parsers={"narrative_md": parser_src})
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.py").write_text("# stub\n")
+    (tmp_path / "docs" / "d.md").write_text("<!-- id: foo -->\n")
+
+    rc, payload, _ = _run(tmp_path)
+    assert rc == 0
+    assert payload["reverse"]["status"] == "WARN"
+    assert "stale" in str(payload["reverse"]["reverse_misses"])
+
+
+def test_runner_fails_when_parser_returns_colon(tmp_path):
+    """Spec § Failure modes: parser returning ':' in an ID → FAIL."""
+    cfg = """
+deliverable_inventory:
+  - path: docs/d.md
+    parser: narrative_md
+    parser_version: "1.0.0"
+compliance_monitor:
+  provenance_strict: false
+"""
+    prov = """\
+| ID  | Deliverable element | Producing script(s) |
+| --- | ------------------- | ------------------- |
+| foo | F                   | src/a.py            |
+"""
+    # Parser stub deliberately returns a colon-containing ID
+    bad_parser = 'VERSION = "1.0.0"\ndef parse(s): return ["bad:thing"]\n'
+    _fixture_repo(tmp_path, config_yaml=cfg, provenance_md=prov, parsers={
+        "narrative_md": bad_parser,
+    })
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.py").write_text("# stub\n")
+    (tmp_path / "docs" / "d.md").write_text("\n")
+
+    rc, payload, _ = _run(tmp_path)
+    assert rc != 0
+    assert payload["reverse"]["status"] == "FAIL"
+    assert any("colon" in d.lower() or ":" in d for d in payload["reverse"]["details"])

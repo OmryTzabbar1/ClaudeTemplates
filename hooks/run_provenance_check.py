@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from hooks import parse_config, provenance_io  # noqa: E402
+from hooks.provenance_reverse import reverse_direction as _reverse_direction  # noqa: E402
 
 
 def _load_config():
@@ -95,12 +96,13 @@ def main(argv: list[str]) -> int:
         return 1
 
     forward = _forward_direction(rows, strict)
-
-    overall_fail = forward["status"] == "FAIL"
+    reverse = _reverse_direction(inv, rows, strict)
+    overall_fail = forward["status"] == "FAIL" or reverse["status"] == "FAIL"
     payload = {
         "check": "provenance_integrity",
         "status": "FAIL" if overall_fail else "PASS",
         "forward": forward,
+        "reverse": reverse,
         "rows_seen": len(rows),
     }
     print(json.dumps(payload))
