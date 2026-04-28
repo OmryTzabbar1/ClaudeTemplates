@@ -4,7 +4,8 @@
 """provenance_reverse — reverse-direction audit logic for CHECK 7.
 
 Loads parsers, runs parse(), compares detected IDs to provenance rows.
-Flat mode only; Task 11 will add namespaced mode.
+Supports both flat mode (single-deliverable, no `key`) and namespaced
+mode (any inventory entry has `key` → IDs prefixed `<key>:<id>`).
 """
 from __future__ import annotations
 
