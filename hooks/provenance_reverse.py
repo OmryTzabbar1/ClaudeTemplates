@@ -13,7 +13,10 @@ from pathlib import Path
 
 from hooks import provenance_io
 
-_FAIL_SUBSTRINGS = ("load failed", "raised", "non-list-of-str", "colon", "does not exist")
+_FAIL_SUBSTRINGS = (
+    "load failed", "raised", "non-list-of-str", "colon", "does not exist",
+    "flat but inventory is namespaced", "unknown key",
+)
 
 
 def _process_entry(entry):
@@ -52,14 +55,32 @@ def _process_entry(entry):
 
 def reverse_direction(inv, rows, strict):
     """Compare parser-detected IDs to provenance rows; return audit dict."""
+    namespaced = any(e.get("key") for e in inv)
+    known_keys = {e["key"] for e in inv if e.get("key")}
     details: list[str] = []
     all_detected: set[str] = set()
     for entry in inv:
         detail, ids = _process_entry(entry)
         if detail:
             details.extend(detail.splitlines())
+        if namespaced:
+            key = entry.get("key", "")
+            ids = {f"{key}:{i}" for i in ids}
         all_detected.update(ids)
     provenance_ids = {row.id for row in rows}
+    if namespaced:
+        for pid in provenance_ids:
+            if ":" not in pid:
+                details.append(
+                    f"Provenance ID {pid!r} is flat but inventory is namespaced (must be <key>:<id>)"
+                )
+            else:
+                prefix = pid.split(":", 1)[0]
+                if prefix not in known_keys:
+                    details.append(
+                        f"Provenance ID {pid!r} uses unknown key {prefix!r};"
+                        f" known keys: {sorted(known_keys)}"
+                    )
     forward_misses = sorted(all_detected - provenance_ids)
     reverse_misses = sorted(provenance_ids - all_detected)
     is_hard_fail = any(

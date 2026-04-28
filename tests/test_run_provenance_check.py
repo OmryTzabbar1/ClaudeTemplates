@@ -348,3 +348,95 @@ compliance_monitor:
     assert rc != 0
     assert payload["reverse"]["status"] == "FAIL"
     assert any("colon" in d.lower() or ":" in d for d in payload["reverse"]["details"])
+
+
+def test_runner_namespaced_passes_when_keys_align(tmp_path):
+    cfg = """
+deliverable_inventory:
+  - path: docs/paper.md
+    parser: narrative_md
+    parser_version: "1.0.0"
+    key: paper
+  - path: docs/dash.md
+    parser: narrative_md
+    parser_version: "1.0.0"
+    key: dash
+compliance_monitor:
+  provenance_strict: false
+"""
+    prov = """\
+| ID            | Deliverable element | Producing script(s) |
+| ------------- | ------------------- | ------------------- |
+| paper:foo     | F in paper          | src/a.py            |
+| dash:foo      | F in dash           | src/a.py            |
+"""
+    parser_src = ('VERSION = "1.0.0"\nimport re\n'
+                  'def parse(s): return sorted(set(re.findall(r"<!--\\s*id:\\s*([\\w-]+)\\s*-->", s)))\n')
+    _fixture_repo(tmp_path, config_yaml=cfg, provenance_md=prov, parsers={"narrative_md": parser_src})
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.py").write_text("# stub\n")
+    (tmp_path / "docs" / "paper.md").write_text("<!-- id: foo -->\n")
+    (tmp_path / "docs" / "dash.md").write_text("<!-- id: foo -->\n")
+
+    rc, payload, _ = _run(tmp_path)
+    assert rc == 0
+    assert payload["status"] == "PASS"
+    assert payload["reverse"]["count_detected"] == 2
+    assert payload["reverse"]["count_provenance"] == 2
+
+
+def test_runner_namespaced_fails_on_flat_provenance_id(tmp_path):
+    """Provenance row with flat ID in namespaced mode → FAIL."""
+    cfg = """
+deliverable_inventory:
+  - path: docs/paper.md
+    parser: narrative_md
+    parser_version: "1.0.0"
+    key: paper
+compliance_monitor:
+  provenance_strict: false
+"""
+    prov = """\
+| ID  | Deliverable element | Producing script(s) |
+| --- | ------------------- | ------------------- |
+| foo | flat ID in namespaced mode | src/a.py     |
+"""
+    parser_src = ('VERSION = "1.0.0"\nimport re\n'
+                  'def parse(s): return sorted(set(re.findall(r"<!--\\s*id:\\s*([\\w-]+)\\s*-->", s)))\n')
+    _fixture_repo(tmp_path, config_yaml=cfg, provenance_md=prov, parsers={"narrative_md": parser_src})
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.py").write_text("# stub\n")
+    (tmp_path / "docs" / "paper.md").write_text("<!-- id: foo -->\n")
+
+    rc, payload, _ = _run(tmp_path)
+    assert rc != 0
+    assert payload["reverse"]["status"] == "FAIL"
+    assert any("flat" in d.lower() or "namespaced" in d.lower() for d in payload["reverse"]["details"])
+
+
+def test_runner_namespaced_fails_on_unknown_key_prefix(tmp_path):
+    cfg = """
+deliverable_inventory:
+  - path: docs/paper.md
+    parser: narrative_md
+    parser_version: "1.0.0"
+    key: paper
+compliance_monitor:
+  provenance_strict: false
+"""
+    prov = """\
+| ID            | Deliverable element        | Producing script(s) |
+| ------------- | -------------------------- | ------------------- |
+| ghost:foo     | row with unknown key prefix | src/a.py           |
+"""
+    parser_src = ('VERSION = "1.0.0"\nimport re\n'
+                  'def parse(s): return sorted(set(re.findall(r"<!--\\s*id:\\s*([\\w-]+)\\s*-->", s)))\n')
+    _fixture_repo(tmp_path, config_yaml=cfg, provenance_md=prov, parsers={"narrative_md": parser_src})
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.py").write_text("# stub\n")
+    (tmp_path / "docs" / "paper.md").write_text("\n")
+
+    rc, payload, _ = _run(tmp_path)
+    assert rc != 0
+    assert payload["reverse"]["status"] == "FAIL"
+    assert any("ghost" in d for d in payload["reverse"]["details"])
