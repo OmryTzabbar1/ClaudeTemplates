@@ -70,3 +70,111 @@ def test_parse_provenance_flags_empty_id():
 """
     with pytest.raises(MalformedRowError):
         parse_provenance(text)
+
+
+def test_load_parser_finds_canonical(tmp_path, monkeypatch):
+    """Canonical parser loads when VERSION lacks 'local-' prefix."""
+    pkg = tmp_path / "parsers"
+    pkg.mkdir()
+    (pkg / "__init__.py").write_text("")
+    (pkg / "demo.py").write_text(
+        'VERSION = "1.0.0"\n'
+        'def parse(s: str) -> list[str]: return ["x"]\n'
+    )
+    monkeypatch.chdir(tmp_path)
+
+    from hooks.provenance_io import load_parser
+    mod = load_parser("demo")
+    assert mod.VERSION == "1.0.0"
+    assert mod.parse("anything") == ["x"]
+
+
+def test_load_parser_rejects_canonical_with_local_prefix(tmp_path, monkeypatch):
+    pkg = tmp_path / "parsers"
+    pkg.mkdir()
+    (pkg / "__init__.py").write_text("")
+    (pkg / "demo.py").write_text(
+        'VERSION = "local-1.0.0"\n'
+        'def parse(s: str) -> list[str]: return []\n'
+    )
+    monkeypatch.chdir(tmp_path)
+
+    from hooks.provenance_io import load_parser, ParserLoadError
+    with pytest.raises(ParserLoadError) as exc:
+        load_parser("demo")
+    assert "must not use a `local-`" in str(exc.value)
+
+
+def test_load_parser_local_must_have_prefix(tmp_path, monkeypatch):
+    pkg = tmp_path / "parsers" / "local"
+    pkg.mkdir(parents=True)
+    (tmp_path / "parsers" / "__init__.py").write_text("")
+    (pkg / "__init__.py").write_text("")
+    (pkg / "demo.py").write_text(
+        'VERSION = "1.0.0"\n'  # missing local- prefix
+        'def parse(s: str) -> list[str]: return []\n'
+    )
+    monkeypatch.chdir(tmp_path)
+
+    from hooks.provenance_io import load_parser, ParserLoadError
+    with pytest.raises(ParserLoadError) as exc:
+        load_parser("demo")
+    assert "must use a `local-`" in str(exc.value)
+
+
+def test_load_parser_local_shadows_canonical(tmp_path, monkeypatch):
+    """parsers/local/<n>.py takes precedence on collision."""
+    (tmp_path / "parsers").mkdir()
+    (tmp_path / "parsers" / "__init__.py").write_text("")
+    (tmp_path / "parsers" / "demo.py").write_text(
+        'VERSION = "1.0.0"\n'
+        'def parse(s): return ["canonical"]\n'
+    )
+    (tmp_path / "parsers" / "local").mkdir()
+    (tmp_path / "parsers" / "local" / "__init__.py").write_text("")
+    (tmp_path / "parsers" / "local" / "demo.py").write_text(
+        'VERSION = "local-1.0.0"\n'
+        'def parse(s): return ["local"]\n'
+    )
+    monkeypatch.chdir(tmp_path)
+
+    from hooks.provenance_io import load_parser
+    mod = load_parser("demo")
+    assert mod.parse("") == ["local"]
+
+
+def test_load_parser_missing_raises(tmp_path, monkeypatch):
+    (tmp_path / "parsers").mkdir()
+    (tmp_path / "parsers" / "__init__.py").write_text("")
+    monkeypatch.chdir(tmp_path)
+
+    from hooks.provenance_io import load_parser, ParserLoadError
+    with pytest.raises(ParserLoadError) as exc:
+        load_parser("nope")
+    assert "unknown parser" in str(exc.value).lower()
+
+
+def test_load_parser_missing_VERSION_raises(tmp_path, monkeypatch):
+    (tmp_path / "parsers").mkdir()
+    (tmp_path / "parsers" / "__init__.py").write_text("")
+    (tmp_path / "parsers" / "demo.py").write_text(
+        'def parse(s): return []\n'  # no VERSION
+    )
+    monkeypatch.chdir(tmp_path)
+
+    from hooks.provenance_io import load_parser, ParserLoadError
+    with pytest.raises(ParserLoadError):
+        load_parser("demo")
+
+
+def test_load_parser_missing_parse_raises(tmp_path, monkeypatch):
+    (tmp_path / "parsers").mkdir()
+    (tmp_path / "parsers" / "__init__.py").write_text("")
+    (tmp_path / "parsers" / "demo.py").write_text(
+        'VERSION = "1.0.0"\n'  # no parse
+    )
+    monkeypatch.chdir(tmp_path)
+
+    from hooks.provenance_io import load_parser, ParserLoadError
+    with pytest.raises(ParserLoadError):
+        load_parser("demo")
