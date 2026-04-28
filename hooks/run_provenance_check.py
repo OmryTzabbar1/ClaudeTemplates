@@ -17,7 +17,7 @@ from pathlib import Path
 # Make hooks/ importable so we can pull in provenance_io
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from hooks import parse_config  # noqa: E402
+from hooks import parse_config, provenance_io  # noqa: E402
 
 
 def _load_config():
@@ -66,13 +66,45 @@ def main(argv: list[str]) -> int:
             "details": fails,
         }))
         return 1
-    # forward + reverse direction implemented in Tasks 9-10
-    print(json.dumps({
+
+    strict = bool(cfg.get("compliance_monitor", {}).get("provenance_strict", False))
+    prov_path = Path.cwd() / "docs" / "DELIVERABLE_PROVENANCE.md"
+    if not prov_path.exists():
+        print(json.dumps({
+            "check": "provenance_integrity",
+            "status": "FAIL",
+            "details": [f"docs/DELIVERABLE_PROVENANCE.md missing but deliverable_inventory is set"],
+        }))
+        return 1
+    try:
+        rows = provenance_io.parse_provenance(prov_path.read_text())
+    except provenance_io.ProvenanceError as e:
+        print(json.dumps({
+            "check": "provenance_integrity",
+            "status": "FAIL",
+            "details": [f"DELIVERABLE_PROVENANCE.md: {type(e).__name__}: {e}"],
+        }))
+        return 1
+
+    forward_warnings = []
+    for row in rows:
+        for path in row.script_paths:
+            if not (Path.cwd() / path).exists():
+                forward_warnings.append(f"row {row.id!r}: script path {path!r} does not exist")
+    forward = {
+        "status": "PASS" if not forward_warnings else ("FAIL" if strict else "WARN"),
+        "details": forward_warnings,
+    }
+
+    overall_fail = forward["status"] == "FAIL"
+    payload = {
         "check": "provenance_integrity",
-        "status": "PASS",
-        "reason": "inventory validated; full audit pending Tasks 9-10",
-    }))
-    return 0
+        "status": "FAIL" if overall_fail else "PASS",
+        "forward": forward,
+        "rows_seen": len(rows),
+    }
+    print(json.dumps(payload))
+    return 1 if overall_fail else 0
 
 
 if __name__ == "__main__":

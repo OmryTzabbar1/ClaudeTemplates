@@ -132,3 +132,79 @@ compliance_monitor:
     assert rc != 0
     assert payload["status"] == "FAIL"
     assert "parser_version" in payload["details"][0].lower()
+
+
+def test_runner_forward_passes_when_all_paths_exist(tmp_path):
+    cfg = """
+deliverable_inventory:
+  - path: docs/d.md
+    parser: narrative_md
+    parser_version: "1.0.0"
+compliance_monitor:
+  provenance_strict: false
+"""
+    prov = """\
+| ID  | Deliverable element | Producing script(s) |
+| --- | ------------------- | ------------------- |
+| foo | F                   | src/a.py            |
+"""
+    _fixture_repo(tmp_path, config_yaml=cfg, provenance_md=prov, parsers={
+        "narrative_md": 'VERSION = "1.0.0"\ndef parse(s): return []\n'
+    })
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.py").write_text("# stub\n")
+    (tmp_path / "docs" / "d.md").write_text("<!-- id: foo -->\n")
+
+    rc, payload, _ = _run(tmp_path)
+    assert rc == 0
+    assert payload["status"] == "PASS"
+    assert payload["forward"]["status"] == "PASS"
+
+
+def test_runner_forward_warns_on_missing_path_non_strict(tmp_path):
+    cfg = """
+deliverable_inventory:
+  - path: docs/d.md
+    parser: narrative_md
+    parser_version: "1.0.0"
+compliance_monitor:
+  provenance_strict: false
+"""
+    prov = """\
+| ID  | Deliverable element | Producing script(s) |
+| --- | ------------------- | ------------------- |
+| foo | F                   | src/missing.py      |
+"""
+    _fixture_repo(tmp_path, config_yaml=cfg, provenance_md=prov, parsers={
+        "narrative_md": 'VERSION = "1.0.0"\ndef parse(s): return ["foo"]\n'
+    })
+    (tmp_path / "docs" / "d.md").write_text("<!-- id: foo -->\n")
+
+    rc, payload, _ = _run(tmp_path)
+    assert rc == 0  # WARN does not fail in non-strict mode
+    assert payload["forward"]["status"] == "WARN"
+    assert any("src/missing.py" in d for d in payload["forward"]["details"])
+
+
+def test_runner_forward_fails_on_missing_path_strict(tmp_path):
+    cfg = """
+deliverable_inventory:
+  - path: docs/d.md
+    parser: narrative_md
+    parser_version: "1.0.0"
+compliance_monitor:
+  provenance_strict: true
+"""
+    prov = """\
+| ID  | Deliverable element | Producing script(s) |
+| --- | ------------------- | ------------------- |
+| foo | F                   | src/missing.py      |
+"""
+    _fixture_repo(tmp_path, config_yaml=cfg, provenance_md=prov, parsers={
+        "narrative_md": 'VERSION = "1.0.0"\ndef parse(s): return ["foo"]\n'
+    })
+    (tmp_path / "docs" / "d.md").write_text("<!-- id: foo -->\n")
+
+    rc, payload, _ = _run(tmp_path)
+    assert rc != 0
+    assert payload["forward"]["status"] == "FAIL"
