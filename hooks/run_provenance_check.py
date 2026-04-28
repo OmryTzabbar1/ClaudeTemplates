@@ -49,7 +49,26 @@ def _validate_inventory(inv):
     return fails
 
 
+def _self_check() -> int:
+    """Synthetic in-memory audit. Exit 0 on PASS."""
+    from parsers import narrative_md as _nm
+    synthetic_md = "<!-- id: alpha -->\n<!-- id: beta -->\n"
+    synthetic_prov = ("| ID    | Deliverable element | Producing script(s) |\n"
+                      "| ----- | ------------------- | ------------------- |\n"
+                      "| alpha | A                   | __runner_self__     |\n"
+                      "| beta  | B                   | __runner_self__     |\n")
+    detected = set(_nm.parse(synthetic_md))
+    prov_rows = provenance_io.parse_provenance(synthetic_prov)
+    prov_ids = {r.id for r in prov_rows}
+    ok = detected == prov_ids
+    print(json.dumps({"check": "provenance_integrity", "status": "PASS" if ok else "FAIL",
+                      "mode": "self-check", "detected": sorted(detected), "provenance": sorted(prov_ids)}))
+    return 0 if ok else 1
+
+
 def main(argv: list[str]) -> int:
+    if argv and argv[0] == "--self-check":
+        return _self_check()
     cfg = _load_config()
     inv = cfg.get("deliverable_inventory") or []
     if not inv:

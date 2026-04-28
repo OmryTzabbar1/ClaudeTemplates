@@ -440,3 +440,11 @@ compliance_monitor:
     assert rc != 0
     assert payload["reverse"]["status"] == "FAIL"
     assert any("ghost" in d for d in payload["reverse"]["details"])
+
+
+def test_runner_self_check_passes(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    rc, payload, stderr = _run(tmp_path, "--self-check")
+    assert rc == 0, f"self-check failed: {payload} / {stderr}"
+    assert payload["status"] == "PASS"
+    assert payload.get("mode") == "self-check"
