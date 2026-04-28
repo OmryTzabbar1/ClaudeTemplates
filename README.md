@@ -1,6 +1,6 @@
 # Claude Project Documentation Templates
 
-Version: 2.0.0
+Version: 2.1.0
 
 Templates for structuring a project so Claude Code (and its subagents) can work effectively across multiple sessions — with layered enforcement via git hooks, Claude Code hooks, and a compliance monitor agent.
 
@@ -34,6 +34,16 @@ Templates for structuring a project so Claude Code (and its subagents) can work 
 | **Git pre-commit** | Line count > 150, missing headers, hardcoded URLs/secrets, test failures | On every commit (hard gate) |
 | **Claude Code hooks** | Unread CONTEXT files, advisory hardcoded patterns, approaching line limits | Mid-session (gate or warning) |
 | **Compliance monitor** | CONTEXT drift, line count mismatches, stale references, contract inconsistencies | Session end (advisory report) |
+
+## Parser-based provenance audit (CHECK 7)
+
+The compliance monitor's CHECK 7 (`provenance_integrity`) compares parser-detected element IDs in each project's deliverable against rows in `docs/DELIVERABLE_PROVENANCE.md`. Configuration lives in `compliance_config.yaml` under `deliverable_inventory:` (a list of `{path, parser, parser_version, key?}` entries; `key` is required when ≥2 entries, all-or-nothing).
+
+Parsers ship in `parsers/` (canonical) with project-local extensions in `parsers/local/`. The contract is one signature: `parse(file_contents: str) -> list[str]` plus a `VERSION` string. Local parsers use a `local-`-prefixed VERSION; canonical parsers must not. The audit refuses any parser whose VERSION-prefix doesn't match its location, surfacing silent forks in `compliance_config.yaml` itself.
+
+The runner is `hooks/run_provenance_check.py`; the agent shells out to it and relays the JSON verdict. See `docs/superpowers/specs/2026-04-27-deliverable-provenance-audit-design.md` for the full audit logic, failure modes, and limitations.
+
+`docs/DELIVERABLE_PROVENANCE.md` (downstream-installed by `setup.sh`) is the human-curated half. It replaces a prior `docs/SCRIPT_PURPOSES.md` whose two-section design is documented in `decisions/0001-cut-script-registry.md`.
 
 ## Customization
 
