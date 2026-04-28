@@ -94,15 +94,7 @@ def main(argv: list[str]) -> int:
         }))
         return 1
 
-    forward_warnings = []
-    for row in rows:
-        for path in row.script_paths:
-            if not (Path.cwd() / path).exists():
-                forward_warnings.append(f"row {row.id!r}: script path {path!r} does not exist")
-    forward = {
-        "status": "PASS" if not forward_warnings else ("FAIL" if strict else "WARN"),
-        "details": forward_warnings,
-    }
+    forward = _forward_direction(rows, strict)
 
     overall_fail = forward["status"] == "FAIL"
     payload = {
@@ -113,6 +105,19 @@ def main(argv: list[str]) -> int:
     }
     print(json.dumps(payload))
     return 1 if overall_fail else 0
+
+
+def _forward_direction(rows, strict):
+    """Check that every script path referenced in provenance rows exists on disk."""
+    warnings = []
+    for row in rows:
+        for path in row.script_paths:
+            if not (Path.cwd() / path).exists():
+                warnings.append(f"row {row.id!r}: script path {path!r} does not exist")
+    return {
+        "status": "PASS" if not warnings else ("FAIL" if strict else "WARN"),
+        "details": warnings,
+    }
 
 
 if __name__ == "__main__":
