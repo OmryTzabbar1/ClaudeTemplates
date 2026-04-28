@@ -101,6 +101,7 @@ read_gate:
 compliance_monitor:
   agent_definition: "agents/compliance_monitor.md"
   report_path: ".claude/last_compliance_report.json"
+  provenance_strict: false  # promote provenance_integrity WARN to FAIL when true
   checks:
     - id: "file_registration"
       description: "Every source file exists in CONTEXT.md and its module CONTEXT_*.md"
@@ -114,3 +115,14 @@ compliance_monitor:
       description: "No deleted files still referenced in CONTEXT files"
     - id: "advisory_dismissals_reviewed"
       description: "Every dismissed advisory warning has a justification of min_justification_length+ chars"
+    - id: "provenance_integrity"
+      description: "DELIVERABLE_PROVENANCE.md rows align with parser-detected IDs in each deliverable; script paths exist"
+
+# --- Deliverable provenance audit (CHECK 7) ---
+# Set this in downstream projects to enable reverse-direction audit.
+# See docs/superpowers/specs/2026-04-27-deliverable-provenance-audit-design.md
+# deliverable_inventory:
+#   - path: output/results_narrative.md
+#     parser: narrative_md
+#     parser_version: "1.0.0"
+#     # key: paper  # required when ≥2 entries (all-or-nothing)
