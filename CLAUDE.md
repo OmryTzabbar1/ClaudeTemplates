@@ -2,7 +2,7 @@
 
 **IMPORTANT: Read this entire file before making ANY code changes.**
 
-Version: 2.2.0
+Version: 2.4.0
 
 ---
 
@@ -53,7 +53,7 @@ Every subagent working on this project MUST, in this order:
 - **Modularity** — Single responsibility per module. If it needs a long explanation, it does too much.
 - **Check existing code first** — Search the codebase before implementing. Never duplicate logic.
 - **Reuse before writing** — Wire into existing functions and modules. New code is a last resort.
-- **Register every new file** — When creating a new source file (including splits/extractions), immediately: add the file header, add it to the module's CONTEXT_*.md and CONTEXT.md file maps with line count, and add it to the Interface Contracts table if it produces or consumes files.
+- **Register every new file** — When creating a new source file (including splits/extractions), immediately: add the file header, add it to the module's CONTEXT_*.md and CONTEXT.md file maps with line count, and add it to the Interface Contracts table if it produces or consumes files. If the new file or its output surfaces a new element in the project's reader-facing deliverable (a finding, screen, endpoint, public API function, scene, etc.), add a row under Deliverable → Code Provenance in `docs/DELIVERABLE_PROVENANCE.md`. The script-itself does not need its own row — the per-file inventory was retired (see `decisions/0001-cut-script-registry.md`); CONTEXT files now own the file-level registry.
 
 ### Session Scope Assessment
 
@@ -116,4 +116,5 @@ Before marking any task complete, all of the following must be true.
 - [ ] Interface Contracts table matches actual filenames in code
 - [ ] All `.md` files have semantic versions, incremented if touched
 - [ ] Plans synced with code changes
+- [ ] Every new deliverable-surfacing element (figure, screen, endpoint, etc.) registered as a row in `docs/DELIVERABLE_PROVENANCE.md` Deliverable → Code Provenance
 - [ ] `README.md` reflects current reality if any of these changed: project phase/status, tech stack, repo layout, getting-started steps, or module list (README version bumped if edited). Routine intra-module work does NOT require a README touch — see CONTEXT.md § README.md Maintenance for the trigger list.
