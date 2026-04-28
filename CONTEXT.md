@@ -146,7 +146,7 @@ project/
 ├── .gitignore                          # CT's own ignore rules (Python, IDE, OS, Claude session files)
 ├── decisions/
 │   ├── README.md                        (48 lines)   # ADR directory guide and index
-│   └── 0001-cut-script-registry.md      (56 lines)   # ADR 0001: why SCRIPT_PURPOSES.md was replaced by DELIVERABLE_PROVENANCE.md
+│   └── 0001-cut-script-registry.md      (58 lines)   # ADR 0001: why SCRIPT_PURPOSES.md was replaced by DELIVERABLE_PROVENANCE.md
 ├── parsers/
 │   ├── __init__.py                      (20 lines)   # re-exports canonical parser registry
 │   ├── narrative_md.py                  (18 lines)   # canonical narrative_md parser (detects inline stat IDs)

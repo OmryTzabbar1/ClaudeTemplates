@@ -1,5 +1,7 @@
 # 0001 — Cut Script Registry from `docs/SCRIPT_PURPOSES.md`
 
+Version: 1.0.0
+
 Status: accepted
 Date: 2026-04-27
 
