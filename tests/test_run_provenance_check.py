@@ -208,3 +208,26 @@ compliance_monitor:
     rc, payload, _ = _run(tmp_path)
     assert rc != 0
     assert payload["forward"]["status"] == "FAIL"
+
+
+def test_runner_fails_when_provenance_empty_but_inventory_set(tmp_path):
+    """Spec § Failure modes: empty Provenance file + configured inventory → FAIL."""
+    cfg = """
+deliverable_inventory:
+  - path: docs/d.md
+    parser: narrative_md
+    parser_version: "1.0.0"
+compliance_monitor:
+  provenance_strict: false
+"""
+    # Empty provenance file (header text only, no rows)
+    prov = "# DELIVERABLE_PROVENANCE.md\n\nNo table here yet.\n"
+    _fixture_repo(tmp_path, config_yaml=cfg, provenance_md=prov, parsers={
+        "narrative_md": 'VERSION = "1.0.0"\ndef parse(s): return []\n'
+    })
+    (tmp_path / "docs" / "d.md").write_text("")
+
+    rc, payload, _ = _run(tmp_path)
+    assert rc != 0
+    assert payload["status"] == "FAIL"
+    assert any("no rows" in d.lower() for d in payload["details"])

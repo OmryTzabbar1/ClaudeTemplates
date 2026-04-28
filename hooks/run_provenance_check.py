@@ -86,6 +86,14 @@ def main(argv: list[str]) -> int:
         }))
         return 1
 
+    if not rows:
+        print(json.dumps({
+            "check": "provenance_integrity",
+            "status": "FAIL",
+            "details": ["DELIVERABLE_PROVENANCE.md exists but contains no rows; deliverable_inventory is configured."],
+        }))
+        return 1
+
     forward_warnings = []
     for row in rows:
         for path in row.script_paths:
