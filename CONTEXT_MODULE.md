@@ -1,6 +1,6 @@
 # ContextModuleDocumentation/CONTEXT_[MODULE].md
 
-Version: 1.3.0
+Version: 1.4.0
 
 <!--
 This is the EMPTY TEMPLATE. Copy it to `ContextModuleDocumentation/CONTEXT_<your-module>.md`
@@ -103,5 +103,6 @@ Run this checklist after every change to this module. Do not skip items.
 - [ ] **Split files** — If you split a file: update the original's line count, add the new file(s) everywhere, update imports in consumers
 - [ ] **Interface changes** — If filenames or output formats changed: update the Interface Contracts table in `CONTEXT.md` *(verified by compliance monitor)*
 - [ ] **README.md** — If this change moves a phase status, alters the tech stack, restructures the repo layout, changes getting-started steps, or adds/removes the module: update `README.md` and bump its version. Routine module work does NOT require a README touch — see CONTEXT.md § README.md Maintenance for the trigger list.
+- [ ] **`docs/DELIVERABLE_PROVENANCE.md` updated** — If the change surfaces a new figure/screen/endpoint/scene in the project's reader-facing deliverable, add a row under Deliverable → Code Provenance. New source files no longer require a per-file registry entry (see `decisions/0001-cut-script-registry.md`).
 - [ ] **Version bump** — Increment this file's version per the Version Decision Table above
 - [ ] **Recent Changes** — Add a dated bullet to the Recent Changes section above
