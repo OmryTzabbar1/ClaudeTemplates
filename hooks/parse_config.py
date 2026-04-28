@@ -15,6 +15,12 @@ import sys
 import yaml
 
 
+def load_yaml(path):
+    """Load and parse a YAML file; return dict."""
+    with open(path, "r") as f:
+        return yaml.safe_load(f) or {}
+
+
 def resolve(data, path):
     """Walk a dotted path into a nested dict."""
     keys = path.split(".")
