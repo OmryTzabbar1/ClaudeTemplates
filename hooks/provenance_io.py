@@ -112,8 +112,12 @@ def load_parser(name: str):
         raise ParserLoadError(f"parser {name!r} at {path} is missing `VERSION`")
     if not hasattr(mod, "parse"):
         raise ParserLoadError(f"parser {name!r} at {path} is missing `parse`")
+    if not isinstance(mod.VERSION, str):
+        raise ParserLoadError(
+            f"parser {name!r} at {path} has non-string VERSION: {mod.VERSION!r} (expected string)"
+        )
 
-    has_local_prefix = isinstance(mod.VERSION, str) and mod.VERSION.startswith("local-")
+    has_local_prefix = mod.VERSION.startswith("local-")
     if is_local and not has_local_prefix:
         raise ParserLoadError(
             f"parsers/local/{name}.py must use a `local-`-prefixed VERSION (e.g. local-1.0.0); got {mod.VERSION!r}"

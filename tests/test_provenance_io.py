@@ -178,3 +178,19 @@ def test_load_parser_missing_parse_raises(tmp_path, monkeypatch):
     from hooks.provenance_io import load_parser, ParserLoadError
     with pytest.raises(ParserLoadError):
         load_parser("demo")
+
+
+def test_load_parser_non_string_version_raises(tmp_path, monkeypatch):
+    """Parser interface mandates VERSION: str. Non-string raises."""
+    (tmp_path / "parsers").mkdir()
+    (tmp_path / "parsers" / "__init__.py").write_text("")
+    (tmp_path / "parsers" / "demo.py").write_text(
+        'VERSION = (1, 0, 0)\n'  # tuple, not string
+        'def parse(s): return []\n'
+    )
+    monkeypatch.chdir(tmp_path)
+
+    from hooks.provenance_io import load_parser, ParserLoadError
+    with pytest.raises(ParserLoadError) as exc:
+        load_parser("demo")
+    assert "non-string VERSION" in str(exc.value)
