@@ -1,6 +1,6 @@
 # [PROJECT_NAME]
 
-Version: 0.1.0
+Version: 0.2.0
 
 <!--
 This is the FRONT-DOOR README template for downstream projects scaffolded

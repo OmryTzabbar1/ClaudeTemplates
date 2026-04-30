@@ -66,7 +66,7 @@ copy_if_missing "${SCRIPT_DIR}/CONTEXT_MODULE.md" "CONTEXT_MODULE.md"
 copy_if_missing "${SCRIPT_DIR}/compliance_config.yaml" "compliance_config.yaml"
 
 mkdir -p hooks agents
-for hook_file in parse_config.py pre-commit claude_read_gate.py claude_advisory_scan.py claude_subagent_gate.py claude_token_monitor.py; do
+for hook_file in parse_config.py pre-commit claude_read_gate.py claude_advisory_scan.py claude_subagent_gate.py claude_token_monitor.py run_provenance_check.py provenance_io.py provenance_reverse.py; do
     if [ -f "${SCRIPT_DIR}/hooks/${hook_file}" ]; then
         cp "${SCRIPT_DIR}/hooks/${hook_file}" "hooks/${hook_file}"
         chmod +x "hooks/${hook_file}"
@@ -92,6 +92,92 @@ for dir in ContextModuleDocumentation plans docs/superpowers/specs .claude; do
     mkdir -p "$dir"
     info "Directory: $dir/"
 done
+
+echo ""
+
+# Copy decisions/ directory (ADR discipline) — created by deliverable-provenance feature
+mkdir -p decisions
+for adr_file in README.md 0001-cut-script-registry.md; do
+    if [ -f "${SCRIPT_DIR}/decisions/${adr_file}" ]; then
+        copy_if_missing "${SCRIPT_DIR}/decisions/${adr_file}" "decisions/${adr_file}"
+    fi
+done
+
+# Copy parsers/ directory + CHANGELOG — created by deliverable-provenance feature
+mkdir -p parsers
+for parser_file in __init__.py narrative_md.py CHANGELOG.md; do
+    if [ -f "${SCRIPT_DIR}/parsers/${parser_file}" ]; then
+        copy_if_missing "${SCRIPT_DIR}/parsers/${parser_file}" "parsers/${parser_file}"
+    fi
+done
+
+# Seed/migrate the deliverable-to-code provenance file.
+DRY_RUN_FLAG=""
+for arg in "$@"; do
+    [ "$arg" = "--dry-run" ] && DRY_RUN_FLAG="yes"
+done
+
+if [ -f "docs/SCRIPT_PURPOSES.md" ] && [ ! -f "docs/DELIVERABLE_PROVENANCE.md" ]; then
+    info "Detected legacy docs/SCRIPT_PURPOSES.md — migrating to DELIVERABLE_PROVENANCE.md"
+
+    # Refuse to migrate over a dirty git tree
+    if [ -n "$(git status --porcelain docs/SCRIPT_PURPOSES.md 2>/dev/null)" ]; then
+        error "docs/SCRIPT_PURPOSES.md has unstaged changes. Stash or commit first."
+        exit 1
+    fi
+
+    # Detect strip target
+    if ! grep -q '^## Script Registry\s*$' docs/SCRIPT_PURPOSES.md; then
+        error "docs/SCRIPT_PURPOSES.md present but no '## Script Registry' heading found."
+        error "The file may have been customized (e.g., section retitled). Manual review required."
+        exit 1
+    fi
+
+    # Print the diff that would be applied
+    info "Migration would: rename docs/SCRIPT_PURPOSES.md → docs/DELIVERABLE_PROVENANCE.md"
+    info "                 strip section from '## Script Registry' to next '---' or EOF"
+
+    if [ -n "$DRY_RUN_FLAG" ]; then
+        info "--dry-run set; no changes made"
+    else
+        echo ""
+        read -rp "  Proceed with migration? [y/N]: " choice
+        if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+            # Strip Script Registry section
+            python3 - <<'PYEOF'
+from pathlib import Path
+src = Path("docs/SCRIPT_PURPOSES.md")
+text = src.read_text()
+lines = text.splitlines(keepends=True)
+out = []
+in_strip = False
+for line in lines:
+    if line.strip() == "## Script Registry":
+        in_strip = True
+        continue
+    if in_strip and line.strip() == "---":
+        in_strip = False
+        continue
+    if not in_strip:
+        out.append(line)
+dst = Path("docs/DELIVERABLE_PROVENANCE.md")
+dst.write_text("".join(out).replace("SCRIPT_PURPOSES.md", "DELIVERABLE_PROVENANCE.md"))
+src.unlink()
+PYEOF
+            info "Migration complete: docs/DELIVERABLE_PROVENANCE.md"
+            warn "Next steps:"
+            warn "  1. Add 'ID' column to existing rows in docs/DELIVERABLE_PROVENANCE.md"
+            warn "  2. Populate compliance_config.yaml deliverable_inventory section"
+            warn "  3. Re-run compliance_monitor to verify CHECK 7 passes"
+        else
+            warn "Migration skipped"
+        fi
+    fi
+elif [ ! -f "docs/DELIVERABLE_PROVENANCE.md" ]; then
+    if [ -f "${SCRIPT_DIR}/templates/DELIVERABLE_PROVENANCE.md" ]; then
+        copy_if_missing "${SCRIPT_DIR}/templates/DELIVERABLE_PROVENANCE.md" "docs/DELIVERABLE_PROVENANCE.md"
+    fi
+fi
 
 echo ""
 
@@ -250,6 +336,7 @@ echo "Next steps:"
 echo "  1. Fill in README.md placeholders (project name, pitch, tech stack, getting-started)"
 echo "  2. Fill in CLAUDE.md placeholders (project name, description)"
 echo "  3. Fill in CONTEXT.md placeholders (architecture, terminology)"
-echo "  4. Add module entries to compliance_config.yaml read_gate.module_map"
-echo "  5. Run your first Claude Code session"
+echo "  4. In docs/DELIVERABLE_PROVENANCE.md, fill in 'What \"deliverable\" means in this project'"
+echo "  5. Add module entries to compliance_config.yaml read_gate.module_map"
+echo "  6. Run your first Claude Code session"
 echo ""

@@ -1,6 +1,6 @@
 # CONTEXT.md
 
-Version: 2.6.0
+Version: 2.7.0
 
 ---
 
@@ -51,6 +51,7 @@ Version: 2.6.0
 
 <!-- Most recent first. Keep 10-20 entries. Oldest roll off. Include file names and test counts. -->
 
+- **2026-04-27:** Deliverable provenance audit (CHECK 7) implemented. New `decisions/` directory holds ADRs (first ADR records why Script Registry was cut). New `parsers/` directory ships canonical parsers; downstream projects extend via `parsers/local/`. `hooks/run_provenance_check.py` orchestrates the audit; `hooks/provenance_io.py` parses `DELIVERABLE_PROVENANCE.md` markdown tables and loads parser modules with `local-`-prefix enforcement; `hooks/provenance_reverse.py` implements the reverse direction (set diff of detected vs. provenance IDs, with optional namespacing). `templates/DELIVERABLE_PROVENANCE.md` replaces `templates/SCRIPT_PURPOSES.md`. `setup.sh` migrates downstream `docs/SCRIPT_PURPOSES.md` to `docs/DELIVERABLE_PROVENANCE.md` (with `--dry-run` and abort-on-customization safety). `compliance_config.yaml` schema gained `deliverable_inventory` and `provenance_strict`. `agents/compliance_monitor.md` adds CHECK 7 (`provenance_integrity`). CLAUDE.md and CONTEXT_MODULE.md checklists updated. See spec at `docs/superpowers/specs/2026-04-27-deliverable-provenance-audit-design.md` and plan at `docs/superpowers/plans/2026-04-27-deliverable-provenance-audit.md`.
 - **2026-04-17:** Added `templates/CONTEXT_MODULE_EXAMPLE.md` — populated example of a per-module CONTEXT file (fictional Config module, ~120 lines) showing what real Recent Changes, File Map line counts, Key Decisions, and a checked-off Module Change Checklist look like. Added a header pointer in `CONTEXT_MODULE.md` (v1.2.0→v1.3.0) directing users to the example. Bumped CONTEXT.md to v2.6.0.
 - **2026-04-17:** Backported `.gitignore` from TowerDefense — added `.gitignore` at CT root (Python + Claude session files + IDE + OS) and a generic `templates/gitignore` (same content plus a commented Unity section for downstream Unity projects). Updated `setup.sh` (246→255 lines): if the downstream project has no `.gitignore`, seed it from `templates/gitignore`; the existing per-entry append for Claude session files now acts as an idempotent backstop. Bumped CONTEXT.md to v2.5.0.
 - **2026-04-17:** Accuracy sweep — `setup.sh` (213→246 lines): (1) added `claude_token_monitor.py` to the hook copy loop — was missing despite being part of the live hook set, (2) replaced `HOOKS_CONFIG` with the actual nested `{matcher, hooks: [{type, command}]}` JSON shape used by `.claude/settings.json` and added the token-monitor PostToolUse entry, (3) added a `copy_if_missing` step that places `templates/PROJECT_README.md` as the new project's `README.md`, (4) renumbered Next Steps to put README customization first. CONTEXT.md file map: synced hooks/ section — added `claude_subagent_gate.py` and `claude_token_monitor.py`, corrected pre-commit/parse_config/read_gate/advisory_scan line counts to match `wc -l`. Bumped CONTEXT.md to v2.4.0.
@@ -143,10 +144,18 @@ project/
 ├── compliance_config.yaml (114 lines)  # machine-readable policy for hooks
 ├── setup.sh              (255 lines)    # project setup with safe hook install
 ├── .gitignore                          # CT's own ignore rules (Python, IDE, OS, Claude session files)
+├── decisions/
+│   ├── README.md                        (48 lines)   # ADR directory guide and index
+│   └── 0001-cut-script-registry.md      (58 lines)   # ADR 0001: why SCRIPT_PURPOSES.md was replaced by DELIVERABLE_PROVENANCE.md
+├── parsers/
+│   ├── __init__.py                      (20 lines)   # re-exports canonical parser registry
+│   ├── narrative_md.py                  (18 lines)   # canonical narrative_md parser (detects inline stat IDs)
+│   └── CHANGELOG.md                     (13 lines)   # parsers module changelog
 ├── templates/
 │   ├── PROJECT_README.md               # front-door README template for downstream projects
 │   ├── gitignore                        # generic .gitignore template (downstream projects; setup.sh seeds it)
-│   └── CONTEXT_MODULE_EXAMPLE.md        # populated worked example of a per-module CONTEXT file
+│   ├── CONTEXT_MODULE_EXAMPLE.md        # populated worked example of a per-module CONTEXT file
+│   └── DELIVERABLE_PROVENANCE.md        (71 lines)   # deliverable provenance tracking table template (replaces SCRIPT_PURPOSES.md)
 ├── ContextModuleDocumentation/
 │   ├── CONTEXT_hooks.md               # hooks module state
 │   ├── CONTEXT_[module1].md           # [module 1] state
@@ -159,7 +168,10 @@ project/
 │   ├── claude_read_gate.py         (143 lines)  # Claude Code PreToolUse read gate
 │   ├── claude_subagent_gate.py     (121 lines)  # Claude Code PreToolUse subagent compliance gate
 │   ├── claude_advisory_scan.py     (148 lines)  # Claude Code PostToolUse advisory scanner
-│   └── claude_token_monitor.py     (114 lines)  # Claude Code PostToolUse token-size monitor for critical .md files
+│   ├── claude_token_monitor.py     (114 lines)  # Claude Code PostToolUse token-size monitor for critical .md files
+│   ├── run_provenance_check.py     (145 lines)  # CHECK 7 audit runner; orchestrates forward + reverse direction, emits JSON verdict
+│   ├── provenance_io.py            (129 lines)  # parses DELIVERABLE_PROVENANCE.md markdown tables; loads parser modules with local-prefix enforcement
+│   └── provenance_reverse.py       (104 lines)  # reverse-direction logic; runs parsers, computes set diffs, supports flat and namespaced modes
 ├── plans/
 │   └── YYYY-MM-DD-[plan-name].md      # implementation plan
 ├── docs/superpowers/specs/

@@ -1,6 +1,6 @@
 # ContextModuleDocumentation/CONTEXT_hooks.md
 
-Version: 1.5.0
+Version: 1.6.0
 
 ---
 
@@ -18,6 +18,7 @@ The `hooks` module (`hooks/`) provides enforcement scripts for git pre-commit ga
 
 ## Recent Changes
 
+- **2026-04-27:** Added 3 new hook scripts for the deliverable provenance audit (CHECK 7): `run_provenance_check.py` (audit runner), `provenance_io.py` (provenance markdown parser + parser module loader), `provenance_reverse.py` (reverse-direction set-diff logic).
 - **2026-04-06:** `claude_subagent_gate.py` — Created PreToolUse hook for Agent tool; injects CLAUDE.md compliance into subagent dispatches (97 lines)
 - **2026-04-06:** `pre-commit` — Added hardcoded Color() detection for C# non-config files; strict TDD check (all .cs files need tests, no heuristic skip)
 - **2026-04-05:** `claude_advisory_scan.py` — Created Claude Code PostToolUse advisory scanner (149 lines)
@@ -41,17 +42,20 @@ The `hooks` module (`hooks/`) provides enforcement scripts for git pre-commit ga
 
 ```
 hooks/
-├── pre-commit               (288 lines)  — git pre-commit hard gate; enforces headers, line limit, no hardcoded values, TDD, Color check
-├── parse_config.py           (60 lines)  — YAML dotted-key resolver; outputs shell-friendly values
-├── claude_read_gate.py      (127 lines)  — PreToolUse hook; blocks Edit/Write until CONTEXT file read
-├── claude_advisory_scan.py  (149 lines)  — PostToolUse hook; advisory hardcoded pattern scanner
-└── claude_subagent_gate.py   (97 lines)  — PreToolUse hook; injects CLAUDE.md compliance into Agent dispatches
+├── pre-commit                   (288 lines)  — git pre-commit hard gate; enforces headers, line limit, no hardcoded values, TDD, Color check
+├── parse_config.py               (60 lines)  — YAML dotted-key resolver; outputs shell-friendly values
+├── claude_read_gate.py          (127 lines)  — PreToolUse hook; blocks Edit/Write until CONTEXT file read
+├── claude_advisory_scan.py      (149 lines)  — PostToolUse hook; advisory hardcoded pattern scanner
+├── claude_subagent_gate.py       (97 lines)  — PreToolUse hook; injects CLAUDE.md compliance into Agent dispatches
+├── run_provenance_check.py      (145 lines)  — CHECK 7 audit runner; orchestrates forward + reverse direction, emits JSON verdict
+├── provenance_io.py             (129 lines)  — parses DELIVERABLE_PROVENANCE.md markdown tables; loads parser modules with local-prefix enforcement
+└── provenance_reverse.py        (104 lines)  — reverse-direction logic; runs parsers, computes set diffs, supports flat and namespaced modes
 
 tests/
-└── test_parse_config.py      (88 lines)  — 10 tests for parse_config.py
+└── test_parse_config.py          (88 lines)  — 10 tests for parse_config.py
 ```
 
-Total: 809 lines across 6 files.
+Total: 1187 lines across 9 hook files.
 
 ---
 

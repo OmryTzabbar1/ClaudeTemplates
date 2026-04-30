@@ -86,3 +86,38 @@ class TestUsageError:
             cwd=str(PROJECT_ROOT),
         )
         assert result.returncode != 0
+
+
+class TestLoadYaml:
+    """Direct unit tests for the `load_yaml(path)` helper added for CHECK 7 runner."""
+
+    def test_returns_dict_for_typical_yaml(self, tmp_path):
+        from hooks.parse_config import load_yaml
+        f = tmp_path / "cfg.yaml"
+        f.write_text("foo: bar\nbaz:\n  - 1\n  - 2\n")
+        result = load_yaml(str(f))
+        assert isinstance(result, dict)
+        assert result["foo"] == "bar"
+        assert result["baz"] == [1, 2]
+
+    def test_empty_file_returns_empty_dict(self, tmp_path):
+        """Implementation normalizes None/empty via `or {}`."""
+        from hooks.parse_config import load_yaml
+        f = tmp_path / "empty.yaml"
+        f.write_text("")
+        assert load_yaml(str(f)) == {}
+
+    def test_handles_nested_structures(self, tmp_path):
+        from hooks.parse_config import load_yaml
+        f = tmp_path / "nested.yaml"
+        f.write_text(textwrap.dedent("""
+            outer:
+              inner:
+                key: value
+                list:
+                  - a
+                  - b
+        """))
+        result = load_yaml(str(f))
+        assert result["outer"]["inner"]["key"] == "value"
+        assert result["outer"]["inner"]["list"] == ["a", "b"]
